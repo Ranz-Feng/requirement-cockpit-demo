@@ -10,6 +10,13 @@ const MOOD_EN={'温暖':'warm','治愈':'healing','科技':'techy','轻快':'lig
 const BAN_EN={'人声':'vocals, singing','鼓':'drums and percussion','贝斯':'bass','钢琴':'piano','弦乐':'strings','吵闹':'loud noisy mix'};
 const TONIC=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const TAGS=[['温暖治愈','温暖治愈，适合产品发布片开头，不要人声'],['科技感','科技感，紧张而克制，不要鼓'],['轻快活力','轻快活力，适合 vlog 片头，不要太吵'],['大气恢弘','大气恢弘，宣传片氛围，不要人声'],['宁静安详','宁静安详，纪录片质感，不要鼓'],['神秘空灵','神秘空灵，适合游戏画面'],['浪漫深情','浪漫深情，适合婚礼宣传，不要贝斯'],['热血激昂','热血激昂，活动开场，不要人声'],['忧郁深沉','忧郁深沉，雨天画面，不要太吵'],['复古怀旧','复古，派对氛围，不要钢琴'],['兴奋卡点','兴奋，节奏快一点，不要弦乐'],['空灵安静','空灵，安静一点，不要鼓']];
+const REF_SAMPLES=[
+  {id:'bright',name:'轻快电子',style:'电子',bpm:124,tonic:'A',mode:'maj',energy:78,brightness:.72,dyn:58,zcr:8.1,chroma:[.02,.72,.02,.03,.65,.02,.04,.02,.03,.88,.02,.04]},
+  {id:'warm',name:'温暖叙事',style:'钢琴叙事',bpm:82,tonic:'F',mode:'maj',energy:42,brightness:.38,dyn:35,zcr:2.4,chroma:[.66,.02,.03,.02,.03,.78,.02,.03,.03,.62,.02,.03]},
+  {id:'dark',name:'暗色氛围',style:'氛围电子',bpm:96,tonic:'D',mode:'min',energy:34,brightness:.28,dyn:30,zcr:1.8,chroma:[.03,.02,.76,.02,.03,.62,.02,.03,.03,.54,.02,.03]},
+  {id:'rush',name:'热血节奏',style:'摇滚',bpm:142,tonic:'E',mode:'min',energy:88,brightness:.62,dyn:72,zcr:7.6,chroma:[.03,.03,.02,.03,.82,.03,.02,.68,.02,.02,.02,.72]}
+];
+const REF_SHAPE_LABEL={wave:'长线条铺底',arp:'流动琶音',ostinato:'律动循环',arch:'拱形旋律',descend:'下行叙事',leap:'大跳推进',riff:'短促动机'};
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -170,13 +177,16 @@ async function handleReference(file){
     ctx.close&&ctx.close();
     const ref=analyzeReferenceAudio(buf);
     ref.name=file.name;
+    document.querySelectorAll('[data-ref-sample]').forEach(b=>b.classList.remove('active'));
     S.ref=ref;refPanel(ref);$('refClear').hidden=false;
+    setRefAudio(URL.createObjectURL(file));
     s.innerHTML='已解析参考，点击可替换<br><span class="hint">'+esc(file.name)+' · '+ref.dur+'s</span>';
     if(S.f)preview();
     toast('参考音乐解析完成，已参与方案合成');
     return ref;
   }catch(e){
     S.ref=null;refPanel(null);$('refClear').hidden=true;
+    setRefAudio(null);
     s.innerHTML='参考音频解析失败<br><span class="hint">请使用未加保护的 MP3 / WAV / M4A</span>';
     toast('参考音频解析失败，请换一个文件');
     if(S.f)preview();
@@ -188,11 +198,40 @@ function refPanel(ref){
   if(!ref){card.hidden=true;return;}
   card.hidden=false;
   const bar=(n,v,unit)=>'<div class="bar-row"><span>'+n+'</span><div class="bar"><i style="width:'+Math.round(clamp(v,0,1)*100)+'%"></i></div><b>'+(unit?unit(v):Math.round(clamp(v,0,1)*100))+'</b></div>';
+  const rp=referenceProfile(ref),title=ref.name?esc(ref.name)+' · ':'';
   $('refPanel').innerHTML='<div class="plan-head"><span class="plan-style">'+ref.bpm+'</span><span class="badge">BPM 估计</span><span class="badge">'+esc(ref.tonic)+' · '+(ref.mode==='maj'?'大调':'小调')+'</span></div>'
-    +'<div class="feat-sentence">'+ref.dur+'s · '+esc(ref.desc)+' · 参考置信度 '+Math.round(ref.conf*100)+'%</div>'
+    +'<div class="feat-sentence">'+title+ref.dur+'s · '+esc(ref.desc)+' · 音型 '+esc(REF_SHAPE_LABEL[rp.shape]||rp.shape)+' · 参考置信度 '+Math.round(ref.conf*100)+'%</div>'
     +bar('能量',ref.energy/100,()=>ref.energy)
     +bar('亮度',ref.brightness,()=>ref.brightness.toFixed(2))
     +bar('动态',ref.dyn/100,()=>ref.dyn);
+}
+function setRefAudio(url){
+  const a=$('refPlayer');
+  if(S.refAudio&&S.refAudio!==url){try{URL.revokeObjectURL(S.refAudio);}catch(e){}}
+  S.refAudio=url||null;
+  a.src=url||'';a.hidden=!url;if(url)a.load();else a.removeAttribute('src');
+}
+function sampleRef(sample){
+  return Object.assign({},sample,{chroma:(sample.chroma||[]).slice(),dur:15,sr:CFG.sr,conf:.92,desc:sample.name,source:'sample'});
+}
+function samplePlan(sample){
+  const ref=referenceProfile(sampleRef(sample));
+  return{style:sample.style,bpm:sample.bpm,tonic:sample.tonic,mode:sample.mode,instruments:baseInst(sample.style),sections:[[0,4,'铺底'],[4,8,'主题'],[11,4,'收束']],curve:'中段推高',energy:sample.energy,ambient:false,ref,noLead:false,noDrum:false,noBass:false,noPiano:false,noPad:false,emo:'轻快'};
+}
+async function loadRefSample(id){
+  const sample=REF_SAMPLES.find(s=>s.id===id);if(!sample)return;
+  const btn=document.querySelector('[data-ref-sample="'+id+'"]');if(btn)btn.disabled=true;
+  try{
+    const buf=await renderBuffer(composeMusic(samplePlan(sample),hashStr('refsample|'+sample.id)));
+    const wav=encodeWav(buf),ref=sampleRef(sample);
+    document.querySelectorAll('[data-ref-sample]').forEach(b=>b.classList.toggle('active',b.dataset.refSample===id));
+    S.ref=ref;refPanel(ref);$('refClear').hidden=false;
+    setRefAudio(URL.createObjectURL(new Blob([wav],{type:'audio/wav'})));
+    $('refText').innerHTML='已载入参考示例：'+esc(sample.name)+'<br><span class="hint">点击播放可试听参考，生成时提取其节奏、调性与音型</span>';
+    if(S.f)preview();
+    toast('已载入参考示例：'+sample.name);
+  }catch(e){toast('示例音乐生成失败：'+(e.message||'未知错误'));}
+  finally{if(btn)btn.disabled=false;}
 }
 function parsePrompt(text){
   const t=(text||'').replace(/\s+/g,' ');
@@ -225,18 +264,39 @@ const STYLE_MUSIC={
   '摇滚':{prog:{maj:[0,5,7,3],min:[0,3,7,10]},scale:{maj:[0,2,4,7,9],min:[0,3,5,7,10]},shape:'riff',rhythm:[1,1,2,1],wave:'square',bassWave:'sawtooth',leadWave:'square',triad:[0,3,7],bass:1,drums:'rock',register:12,piano:'stab'}
 };
 const SHAPES={wave:[0,1,2,1,0,-1,0,2],arp:[0,2,4,2,0,2,4,6],ostinato:[0,3,0,2,0,3,4,3],arch:[0,1,2,4,2,1,0,-1],descend:[4,3,2,1,2,1,0,-1],leap:[0,4,-1,5,1,-2,6,2],riff:[0,0,4,4,2,2,0,-3]};
-function buildMotif(prof,rng){
-  const shape=SHAPES[prof.shape]||SHAPES.arch;
-  const flip=rng()<.5?-1:1,step=prof.shape==='arp'||prof.shape==='riff'?1:2;
+function referenceProfile(ref){
+  if(!ref)return null;
+  const energy=clamp((+ref.energy||0)/100,0,1),brightness=clamp(+ref.brightness||0,0,1),dyn=clamp((+ref.dyn||0)/100,0,1);
+  const chroma=(ref.chroma||[]).map(v=>Math.max(0,+v||0));
+  const top=chroma.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v);
+  const color=top.length?top[0].i:0,tonicPc=Math.max(0,TONIC.indexOf(ref.tonic));
+  const contour=top.slice(0,4).map(x=>{const d=(x.i-tonicPc+12)%12;return d===0?0:d<6?1:-1;});
+  const shape=energy>.72?'riff':dyn>.60&&brightness>.48?'leap':brightness>.66?'arp':energy<.30?'wave':brightness<.34?'ostinato':'arch';
+  const rhythm=energy>.72?[1,1,1,2,1,1]:dyn>.60?[1,1,2,1,1]:energy<.30?[3,2,3,2]:brightness>.62?[1,2,1,1,2]:[2,2,1,2];
+  const register=brightness>.68?24:brightness<.24?0:12;
+  return{energy,brightness,dyn,chroma,color,contour,shape,rhythm,register,tonic:ref.tonic,mode:ref.mode,bpm:ref.bpm,name:ref.name||''};
+}
+function buildMotif(prof,rng,ref){
+  const shape=SHAPES[(ref&&ref.shape)||prof.shape]||SHAPES.arch;
+  const flip=ref?((ref.color%2)?-1:1):(rng()<.5?-1:1);
+  const step=((ref&&(ref.shape==='arp'||ref.shape==='riff'))||prof.shape==='arp'||prof.shape==='riff')?1:2;
+  const contour=(ref&&ref.contour)||[];
   return shape.map((d,i)=>{
     const jitter=rng()<.25?(rng()<.5?1:-1):0;
     const lift=rng()<.1?3:0;
-    return Math.max(-3,Math.min(6,Math.round(d*step*flip+i*.5)+jitter+lift));
+    let v=Math.round(d*step*flip+i*.5)+jitter+lift;
+    if(ref){
+      v+=contour.length?contour[i%contour.length]*(ref.dyn>.45?1:0):0;
+      if(i%4===0&&ref.brightness>.62)v++;
+      if(i%5===0&&ref.energy<.30)v--;
+    }
+    return Math.max(-3,Math.min(6,v));
   });
 }
 function synthPlan(f,p){
   const tone=p.tone||null;
-  const conflicts=[],src={emotion:p.emotions.length?'prompt':'image',tempo:p.tempo?'prompt':tone?'wave':'none',scene:p.scene?'prompt':'none',bans:p.bans.length?'prompt':'none',key:tone?'wave':'none'};
+  const refProfile=referenceProfile(tone);
+  const conflicts=[],src={emotion:p.emotions.length?'prompt':'image',tempo:p.tempo?'prompt':tone?'wave':'none',scene:p.scene?'prompt':'none',bans:p.bans.length?'prompt':'none',key:tone?'wave':'none',motif:tone?'wave':'style'};
   const ek=p.emotions.length?p.emotions[0]:inferEmo(f),e=EMO[ek];
   let style=e[0],mode=e[2],energy=e[3],bpm=Math.round((e[1][0]+e[1][1])/2);
   if(p.tempo)bpm=clamp(Math.round((p.tempo[0]+p.tempo[1])/2),e[1][0]-8,e[1][1]+8);
@@ -263,7 +323,7 @@ function synthPlan(f,p){
   const ambient=f.subjectStrength<30||energy<35;
   const sections=ambient?[[0,4,'铺底'],[4,7,'起伏'],[11,4,'收束']]:[[0,3,'渐入'],[3,9,'主题'],[12,3,'渐出']];
   const curve=energy>=70?'高开缓落':energy<=35?'缓慢铺开':'中段推高';
-  return{style,bpm:clamp(Math.round(bpm),40,180),key,tonic,mode,instruments:inst,sections,curve,conflicts,sources:src,energy,ambient,noLead:!!flag.noLead,noDrum:!!flag.noDrum,noBass:!!flag.noBass,noPiano:!!flag.noPiano,noPad:!!flag.noPad,emo:ek};
+  return{style,bpm:clamp(Math.round(bpm),40,180),key,tonic,mode,instruments:inst,sections,curve,conflicts,sources:src,energy,ambient,ref:refProfile,noLead:!!flag.noLead,noDrum:!!flag.noDrum,noBass:!!flag.noBass,noPiano:!!flag.noPiano,noPad:!!flag.noPad,emo:ek};
 }
 function diffPlans(a,b){
   const dims=[a.style!==b.style,a.bpm!==b.bpm,a.key!==b.key,a.instruments.join('|')!==b.instruments.join('|'),a.curve!==b.curve,JSON.stringify(a.sections)!==JSON.stringify(b.sections)];
@@ -279,11 +339,13 @@ function buildPromptPair(plan,parsed){
 }
 function composeMusic(plan,seed){
   const rng=mulberry32((seed>>>0)||1),beat=60/plan.bpm;
-  const prof=STYLE_MUSIC[plan.style]||STYLE_MUSIC['流行'];
-  const prog=(plan.mode==='maj'?prof.prog.maj:prof.prog.min).slice();
+  const styleProf=STYLE_MUSIC[plan.style]||STYLE_MUSIC['流行'],ref=plan.ref||null;
+  const prof=Object.assign({},styleProf,ref?{shape:ref.shape,rhythm:ref.rhythm,register:ref.register}:{});
+  let prog=(plan.mode==='maj'?prof.prog.maj:prof.prog.min).slice();
+  if(ref&&prog.length>1){const rot=ref.color%prog.length;prog=prog.slice(rot).concat(prog.slice(0,rot));}
   const scale=(plan.mode==='maj'?prof.scale.maj:prof.scale.min).slice();
   const triad=prof.triad.map((v,i)=>(i===1&&plan.mode==='min'&&v===4?3:v));
-  const base=noteMidi(plan.tonic+'4'),motif=buildMotif(prof,rng);
+  const base=noteMidi(plan.tonic+'4'),motif=buildMotif(prof,rng,ref);
   const sNote=d=>scale[((d%scale.length)+scale.length)%scale.length]+12*Math.floor(d/scale.length);
   const ev=[];let bar=0,leadPrev=null;
   for(const[s0,len,lab]of plan.sections){
@@ -424,7 +486,7 @@ async function trimStore(st){const all=await dbRun(st,'readonly',s=>s.getAll());
 const saveHistory=async r=>{await dbRun('rec','readwrite',s=>s.put(r));await trimStore('rec');};
 async function probe(){try{const c=new AbortController(),tm=setTimeout(()=>c.abort(),1500),r=await fetch(CFG.mp3+'/ping',{signal:c.signal});clearTimeout(tm);return await r.json();}catch(e){return null;}}
 async function mp3Encode(w){const r=await fetch(CFG.mp3+'/mp3',{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:w});if(!r.ok)throw new Error('HTTP '+r.status);return r.arrayBuffer();}
-const S={f:null,plan:null,parsed:null,seed:0,wav:null,pk:null,state:'empty',exp:[],ref:null};
+const S={f:null,plan:null,parsed:null,seed:0,wav:null,pk:null,state:'empty',exp:[],ref:null,refAudio:null};
 const setBtn=()=>{const s=S.state;
   $('btnGen').disabled=!(S.f&&s!=='parsing');$('btnGen').textContent=s==='parsing'?'生成中…':'开始生成';
   $('btnRetry').disabled=s!=='generated';$('btnAdjust').disabled=!(S.f&&s!=='parsing');
@@ -458,9 +520,10 @@ function planCard(p){
   if(p.sources.tempo==='prompt')src.push('节奏：提示词');
   else if(p.sources.tempo==='wave')src.push('节奏：参考音乐');
   if(p.sources.key==='wave')src.push('调性：参考音乐');
+  if(p.sources.motif==='wave')src.push('音型：参考音乐');
   if(p.sources.scene==='prompt')src.push('场景：提示词');
   if(p.sources.bans==='prompt')src.push('禁用：提示词');
-  if(S.ref)src.push('参考：'+S.ref.bpm+'BPM / '+S.ref.tonic+(S.ref.mode==='maj'?'大调':'小调')+' / 能量'+S.ref.energy);
+  if(S.ref)src.push('参考：'+(S.ref.name?S.ref.name+' / ':'')+S.ref.bpm+'BPM / '+S.ref.tonic+(S.ref.mode==='maj'?'大调':'小调')+' / 能量'+S.ref.energy);
   $('planCard').innerHTML='<div class="plan-head"><span class="plan-style">'+esc(p.style)+'</span>'+(p.ambient?'<span class="badge">铺底型</span>':'')+'<span class="badge badge-e">能量 '+p.energy+'</span></div>'
     +'<div class="plan-row"><b>'+p.bpm+'</b> BPM · <b>'+esc(p.key)+'</b> · 情绪：'+esc(p.emo)+'</div>'
     +'<div class="plan-sec">'+p.instruments.map(i=>'<span class="chip">'+esc(i)+'</span>').join('')+'</div>'
@@ -485,7 +548,7 @@ async function saveRec(text){
   const f=S.f;
   await saveHistory({id:'r'+Date.now()+Math.floor(Math.random()*1e4),time:Date.now(),prompt:text,
     features:{mainColors:f.mainColors,brightness:f.brightness,saturation:f.saturation,density:f.density,subjectStrength:f.subjectStrength,hue:f.hue,moodSentence:f.moodSentence},
-    ref:S.ref?{bpm:S.ref.bpm,energy:S.ref.energy,brightness:S.ref.brightness,tonic:S.ref.tonic,mode:S.ref.mode,dur:S.ref.dur,conf:S.ref.conf,desc:S.ref.desc,name:S.ref.name}:null,
+    ref:S.ref?{bpm:S.ref.bpm,energy:S.ref.energy,brightness:S.ref.brightness,dyn:S.ref.dyn,zcr:S.ref.zcr,tonic:S.ref.tonic,mode:S.ref.mode,dur:S.ref.dur,conf:S.ref.conf,desc:S.ref.desc,name:S.ref.name,chroma:(S.ref.chroma||[]).slice()}:null,
     plan:JSON.parse(JSON.stringify(S.plan)),wav:new Blob([S.wav],{type:'audio/wav'}),thumb:f.thumbBlob||null,peaks:S.pk});
   histUI();
 }
@@ -495,7 +558,8 @@ async function generate(){
   try{
     const text=$('promptInput').value;
     S.parsed=parsePrompt(text);S.parsed.tone=S.ref;S.plan=synthPlan(S.f,S.parsed);
-    S.seed=hashStr(text+'|'+Math.round(S.f.hue*10)+'|'+(S.ref?S.ref.bpm+'-'+S.ref.tonic+'-'+S.ref.energy:''));
+    const refSeed=S.ref?[S.ref.bpm,S.ref.tonic,S.ref.mode,S.ref.energy,S.ref.brightness,S.ref.dyn,(S.ref.chroma||[]).map(v=>Math.round(v*100)).join('')].join('-'):'';
+    S.seed=hashStr(text+'|'+Math.round(S.f.hue*10)+'|'+refSeed);
     await renderAudio(S.seed);
     S.state='generated';planCard(S.plan);enPrompt(S.plan,S.parsed);
     await saveRec(text);toast('已生成 15 秒音频，可试听与下载');
@@ -513,7 +577,7 @@ async function retry(){
 async function restore(r){
   try{
     const f=Object.assign({},r.features);f.thumbBlob=r.thumb;
-    S.f=f;S.ref=r.ref||null;refPanel(S.ref);$('refClear').hidden=!S.ref;
+    S.f=f;S.ref=r.ref||null;refPanel(S.ref);$('refClear').hidden=!S.ref;setRefAudio(null);
     if(S.ref)$('refText').innerHTML='历史记录参考：'+esc(S.ref.name||'参考音乐')+'<br><span class="hint">'+S.ref.bpm+' BPM · '+esc(S.ref.tonic)+' · 能量 '+S.ref.energy+'</span>';
     $('promptInput').value=r.prompt||'';S.parsed=parsePrompt(r.prompt||'');S.parsed.tone=S.ref;S.plan=r.plan;
     S.wav=await r.wav.arrayBuffer();S.pk=r.peaks||new Array(140).fill(.5);
@@ -555,6 +619,7 @@ const TESTS=[
 ['B-04','合成时长恒 15 秒',()=>{const p=synthPlan(FIX,{emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,7);let m=0;for(const e of ev)m=Math.max(m,e.t+e.dur);if(m>15.01)throw'越界 '+m;return'事件最晚 '+m.toFixed(2)+'s ≤ 15s';}],
 ['B-06','参考音乐驱动节奏/调性',()=>{const base={emotions:['轻快'],scene:null,tempo:null,bans:[],unknown:[]};const no=synthPlan(FIX,base);const tone={bpm:132,tonic:'D',mode:'min',energy:84,source:'wave'};const yes=synthPlan(FIX,Object.assign({},base,{tone}));if(yes.bpm!==132)throw'BPM 未采用参考值：'+yes.bpm;if(yes.tonic!=='D'||yes.mode!=='min')throw'调性未采用参考值：'+yes.key;if(yes.sources.tempo!=='wave'||yes.sources.key!=='wave')throw'来源未标注参考音乐';if(yes.energy===no.energy)throw'能量未融合参考值';if(no.bpm===yes.bpm&&no.key===yes.key)throw'参考音乐未产生任何差异';return'BPM '+no.bpm+'→132，调性 '+no.key+'→'+yes.key+'，能量 '+no.energy+'→'+yes.energy;}],
 ['B-07','参考音频色度解析稳定',()=>{const c=new Array(12).fill(0);c[0]=1;c[4]=.8;c[7]=.6;const r=normalizeChroma(c);if(!r||r.tonic!=='C'||r.mode!=='maj')throw'大三和弦未识别为 C 大调：'+(r&&r.tonic+' '+r.mode);const bad=normalizeChroma(new Array(12).fill(0));if(bad!==null)throw'空色度未返回 null';return'色度 [C,E,G] → C 大调；空输入 → null';}],
+['B-08','参考音乐改变旋律音型',()=>{const parsed={emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]};const warm=REF_SAMPLES.find(s=>s.id==='warm'),dark=REF_SAMPLES.find(s=>s.id==='dark');const a=synthPlan(FIX,Object.assign({},parsed,{tone:sampleRef(warm)})),b=synthPlan(FIX,Object.assign({},parsed,{tone:sampleRef(dark)}));const la=composeMusic(a,77).filter(e=>e.type==='lead').slice(0,10).map(e=>e.notes[0].m).join(','),lb=composeMusic(b,77).filter(e=>e.type==='lead').slice(0,10).map(e=>e.notes[0].m).join(',');if(a.ref.shape===b.ref.shape)throw'两段参考被识别为同一音型';if(la===lb)throw'参考变化后主旋律仍相同';return a.ref.shape+' vs '+b.ref.shape+'，旋律签名不同';}],
 ['B-05','七种风格旋律/和声互不相同',()=>{const emo={'氛围电子':'温暖','电子':'科技','复古电子':'复古','流行':'轻快','钢琴叙事':'悲伤','管弦':'大气','摇滚':'热血'},sigs={},chords={};for(const st in STYLE_MUSIC){const p=synthPlan(FIX,{emotions:[emo[st]],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,42);for(const e of ev){if(!isFinite(e.t)||!isFinite(e.dur)||!isFinite(e.gain))throw st+' 出现非有限参数';for(const n of e.notes||[])if(!isFinite(n.m)||!isFinite(m2f(n.m)))throw st+' 音符越界（'+e.type+'）';}const lead=ev.filter(e=>e.type==='lead').slice(0,8).map(e=>e.notes[0].m).join(','),pad=ev.filter(e=>e.type==='pad').slice(0,4).map(e=>e.notes.map(n=>n.m).join('.')).join('|');if(!lead)throw st+' 无主旋律';sigs[st]=lead;chords[st]=pad;}const ls=new Set(Object.values(sigs)),cs=new Set(Object.values(chords));if(ls.size!==Object.keys(STYLE_MUSIC).length)throw'旋律重复：'+Object.entries(sigs).filter(([k])=>Object.values(sigs).filter(v=>v===sigs[k]).length>1).map(([k])=>k).join('、');if(cs.size<4)throw'和声重复过多（'+cs.size+' 种）';return'7/7 旋律各异，和声 '+cs.size+' 种，参数全为有限值';}],
 ['S-01','方案合成纯函数确定性',()=>{const a=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]}),b=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]});if(JSON.stringify(a)!==JSON.stringify(b))throw'输出不一致';if(a.sources.tempo!=='prompt')throw'来源标记错';return'同输入两次输出逐字节一致';}],
 ['S-02','禁用项解析',()=>{const p=parsePrompt('温暖治愈，适合产品发布片开头，不要人声，不要太吵');if(!p.bans.includes('人声')||!p.bans.includes('吵闹'))throw'禁用项不全';if(p.scene!=='产品发布')throw'场景错';return'识别【'+p.bans.join('、')+'】+ 场景【产品发布】';}],
@@ -620,6 +685,7 @@ function tab(id){
 }
 (function(){
   TAGS.forEach(t=>{const s=document.createElement('span');s.className='tag';s.textContent=t[0];s.title=t[1];s.onclick=()=>{$('promptInput').value=t[1];preview();};$('tagRow').appendChild(s);});
+  REF_SAMPLES.forEach(s=>{const b=document.createElement('button');b.type='button';b.className='sample-chip';b.dataset.refSample=s.id;b.textContent=s.name;b.onclick=e=>{e.stopPropagation();loadRefSample(s.id);};$('refSamples').appendChild(b);});
   setBtn();histUI();runTests();
   probe().then(p=>{$('mp3State').textContent=p?(p.ffmpeg?'MP3 服务已就绪（127.0.0.1:7777 · ffmpeg 可用）':'服务已启动但未检测到 ffmpeg，请按 serve.mjs 指引安装'):'MP3 服务未启动：下载 MP3 将降级为 WAV（启动：node serve.mjs）';});
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
@@ -633,7 +699,7 @@ function tab(id){
   $('refZone').addEventListener('dragover',e=>{e.preventDefault();$('refZone').classList.add('drag');});
   $('refZone').addEventListener('dragleave',()=>$('refZone').classList.remove('drag'));
   $('refZone').addEventListener('drop',e=>{e.preventDefault();$('refZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleReference(f);});
-  $('refClear').onclick=()=>{S.ref=null;refPanel(null);$('refClear').hidden=true;$('refText').innerHTML='点击上传参考 MP3 / WAV / M4A<br><span class="hint">仅提取节奏、调性、亮度与能量等抽象特征，不做旋律复制</span>';if(S.f)preview();toast('已移除参考音乐');};
+  $('refClear').onclick=()=>{S.ref=null;refPanel(null);$('refClear').hidden=true;setRefAudio(null);document.querySelectorAll('[data-ref-sample]').forEach(b=>b.classList.remove('active'));$('refText').innerHTML='点击上传参考 MP3 / WAV / M4A<br><span class="hint">仅提取节奏、调性、亮度与能量等抽象特征，不做旋律复制</span>';if(S.f)preview();toast('已移除参考音乐');};
   let deb=null;
   $('promptInput').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(preview,250);});
   $('btnGen').onclick=()=>generate();

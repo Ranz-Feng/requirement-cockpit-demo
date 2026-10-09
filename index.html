@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="banner">本页为「素材成曲」本地可行性验证工具：图片仅本机解析、不上传；音频本地合成（示意级音色）；历史仅本机保存 200px 压缩缩略图；验证结论不作为线上功能交付。</div>
+<div class="banner">本页为「素材成曲」本地可行性验证工具：图片与参考音频仅本机解析、不上传；成品音频本地合成（示意级音色）；历史仅本机保存 200px 压缩缩略图；验证结论不作为线上功能交付。</div>
 
 <header class="top">
   <div class="title-wrap"><h1>素材成曲 · 可行性验证</h1><span class="sub">一键成片 · AI 音乐 · 素材成曲</span></div>
@@ -35,6 +35,18 @@
         <div class="card" id="featCard" hidden>
           <h2>画面解析</h2>
           <div id="featPanel"></div>
+        </div>
+        <div class="card">
+          <h2>参考音乐（可选）</h2>
+          <div class="dropzone dropzone-sm" id="refZone">
+            <div id="refText">点击上传参考 MP3 / WAV / M4A<br><span class="hint">仅提取节奏、调性、亮度与能量等抽象特征，不做旋律复制</span></div>
+          </div>
+          <input type="file" id="refInput" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,.mp3,.wav,.m4a,.aac" hidden>
+          <div class="btn-row"><button class="btn btn-ghost" id="refClear" hidden>移除参考音乐</button></div>
+        </div>
+        <div class="card" id="refCard" hidden>
+          <h2>参考解析</h2>
+          <div id="refPanel"></div>
         </div>
         <div class="card">
           <h2>情绪提示词</h2>
@@ -89,7 +101,7 @@
   <section id="tab-test" class="panel">
     <div class="card">
       <h2>规则自检</h2>
-      <p class="hint-p">页面加载时自动执行，覆盖基础链路 B 系列与规则边界 S 系列，共 12 条。</p>
+      <p class="hint-p">页面加载时自动执行，覆盖基础链路 B 系列与规则边界 S 系列。</p>
       <div id="testSummary" class="test-summary"></div>
       <table class="test-table">
         <thead><tr><th>编号</th><th>用例</th><th>结论</th><th>实测</th></tr></thead>

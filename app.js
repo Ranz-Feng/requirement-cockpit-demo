@@ -144,8 +144,9 @@ function analyzeReferenceAudio(buf){
   const hp=new Float32Array(Math.min(win,Math.floor(sr*20)));
   for(let i=1;i<hp.length;i++){hp[i]=ch[i]-ch[i-1]*0.97;}
   for(let i=0;i<hp.length;i++){lf+=ch[i]*ch[i];hf+=hp[i]*hp[i];}
-  const brightness=hf+lf>0?Math.min(1,hf/(hf+lf)*2.4):0;
   const zcr=total?zc/total:0;
+  let brightness=hf+lf>0?Math.min(1,hf/(hf+lf)*2.4):0;
+  if(!(brightness>0.02))brightness=clamp(zcr*1.6,0.05,1);
   const rmsNorm=Math.min(1,rms/Math.max(0.0001,peak||rms||1));
   const maxLag=Math.min(envArr.length-2,1600);
   const corr=new Float32Array(Math.max(1,maxLag+1));
@@ -264,6 +265,44 @@ const STYLE_MUSIC={
   '摇滚':{prog:{maj:[0,5,7,3],min:[0,3,7,10]},scale:{maj:[0,2,4,7,9],min:[0,3,5,7,10]},shape:'riff',rhythm:[1,1,2,1],wave:'square',bassWave:'sawtooth',leadWave:'square',triad:[0,3,7],bass:1,drums:'rock',register:12,piano:'stab'}
 };
 const SHAPES={wave:[0,1,2,1,0,-1,0,2],arp:[0,2,4,2,0,2,4,6],ostinato:[0,3,0,2,0,3,4,3],arch:[0,1,2,4,2,1,0,-1],descend:[4,3,2,1,2,1,0,-1],leap:[0,4,-1,5,1,-2,6,2],riff:[0,0,4,4,2,2,0,-3]};
+/* 参考音乐编排层：由色度/能量/亮度推导和声走向、音阶、动机、音色与鼓型。
+   存在参考音乐时这些维度由参考决定，而不是在原风格上轻微改动。 */
+function refArrangement(ref){
+  const mode=ref.mode==='min'?'min':'maj';
+  const tonicPc=Math.max(0,TONIC.indexOf(ref.tonic));
+  const raw=ref.chroma||[],chroma=Array.from({length:12},(_,i)=>Math.max(0,+raw[i]||0));
+  let sum=0;for(const v of chroma)sum+=v;
+  if(!(sum>0))for(let i=0;i<12;i++)chroma[i]=1/12;else for(let i=0;i<12;i++)chroma[i]/=sum;
+  const ranked=chroma.map((w,pc)=>({pc,w})).sort((a,b)=>b.w-a.w||a.pc-b.pc);
+  const scaleOffsets=(mode==='maj'?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10]).slice();
+  const inScale=ranked.filter(x=>scaleOffsets.includes((x.pc-tonicPc+12)%12));
+  const pool=inScale.length>=3?inScale:ranked;
+  const roots=[];
+  if(pool.some(x=>((x.pc-tonicPc+12)%12)===0))roots.push(0);
+  for(const x of pool){const d=(x.pc-tonicPc+12)%12;if(!roots.includes(d))roots.push(d);if(roots.length>=4)break;}
+  for(let i=0;roots.length<4;i++)roots.push(scaleOffsets[i%scaleOffsets.length]);
+  const norm=v=>{const n=+v||0;return clamp(n>1?n/100:n,0,1);};
+  const energy=norm(ref.energy),brightness=norm(ref.brightness),dyn=norm(ref.dyn);
+  const rng=mulberry32(hashStr('ref|'+(ref.name||'')+'|'+ref.tonic+mode+'|'+Math.round(ref.bpm||0)+'|'+Math.round(ref.energy||0)+'|'+Math.round((ref.brightness||0)*100)+'|'+Math.round((ref.dyn||0)*100)));
+  const weights=scaleOffsets.map(o=>chroma[(tonicPc+o)%12]);
+  const span=scaleOffsets.length;
+  // 按色度权重排出音级次序；不同参考得到不同走向，而不是同一条轮廓换调。
+  const order=scaleOffsets.map((o,i)=>({i,w:weights[i]+rng()*0.006})).sort((a,b)=>b.w-a.w||a.i-b.i).map(x=>x.i);
+  const motif=[0,1,2,3,2,1,0,2].map(r=>order[Math.min(order.length-1,r)]);
+  const bpm=clamp(Math.round(+ref.bpm||100),55,180);
+  const triad=mode==='min'?[0,3,7]:[0,4,7];
+  const wave=brightness>.62?'sawtooth':brightness>.40?'square':'triangle';
+  const leadWave=brightness>.66?'square':brightness>.42?'triangle':'sine';
+  const bassWave=energy>.60?'sawtooth':brightness>.48?'triangle':'sine';
+  const bass=energy>.62?1:dyn>.55?3:2;
+  const drums=energy>.72?(bpm>=125?'rock':'four'):energy>.48?'back':energy>.26?'pulse':'none';
+  const piano=dyn>.60?'broken':energy>.60?'stab':energy<.30?'pad':'block';
+  const rhythms=[[1,1,1,2,1,1],[1,1,2,1,1],[1,2,1,1,2],[2,2,1,2],[3,2,3,2]];
+  const rhythm=energy>.72?rhythms[0]:dyn>.60?rhythms[1]:brightness>.62?rhythms[2]:energy<.30?rhythms[4]:rhythms[3];
+  return{prog:{maj:roots.slice(),min:roots.slice()},scale:{maj:scaleOffsets.slice(),min:scaleOffsets.slice()},motif,
+    shape:ref.shape||'arch',rhythm,wave,bassWave,leadWave,triad,bass,drums,
+    register:brightness>.68?12:brightness<.24?-12:0,piano};
+}
 function referenceProfile(ref){
   if(!ref)return null;
   const energy=clamp((+ref.energy||0)/100,0,1),brightness=clamp(+ref.brightness||0,0,1),dyn=clamp((+ref.dyn||0)/100,0,1);
@@ -274,7 +313,9 @@ function referenceProfile(ref){
   const shape=energy>.72?'riff':dyn>.60&&brightness>.48?'leap':brightness>.66?'arp':energy<.30?'wave':brightness<.34?'ostinato':'arch';
   const rhythm=energy>.72?[1,1,1,2,1,1]:dyn>.60?[1,1,2,1,1]:energy<.30?[3,2,3,2]:brightness>.62?[1,2,1,1,2]:[2,2,1,2];
   const register=brightness>.68?24:brightness<.24?0:12;
-  return{energy,brightness,dyn,chroma,color,contour,shape,rhythm,register,tonic:ref.tonic,mode:ref.mode,bpm:ref.bpm,name:ref.name||''};
+  const base={energy,brightness,dyn,chroma,color,contour,shape,rhythm,register,tonic:ref.tonic,mode:ref.mode,bpm:ref.bpm,name:ref.name||''};
+  base.arr=refArrangement(base);
+  return base;
 }
 function buildMotif(prof,rng,ref){
   const shape=SHAPES[(ref&&ref.shape)||prof.shape]||SHAPES.arch;
@@ -296,7 +337,7 @@ function buildMotif(prof,rng,ref){
 function synthPlan(f,p){
   const tone=p.tone||null;
   const refProfile=referenceProfile(tone);
-  const conflicts=[],src={emotion:p.emotions.length?'prompt':'image',tempo:p.tempo?'prompt':tone?'wave':'none',scene:p.scene?'prompt':'none',bans:p.bans.length?'prompt':'none',key:tone?'wave':'none',motif:tone?'wave':'style'};
+  const conflicts=[],src={emotion:p.emotions.length?'prompt':'image',tempo:p.tempo?'prompt':tone?'wave':'none',scene:p.scene?'prompt':'none',bans:p.bans.length?'prompt':'none',key:tone?'wave':'none',motif:tone?'wave':'style',harmony:tone?'wave':'style',timbre:tone?'wave':'style'};
   const ek=p.emotions.length?p.emotions[0]:inferEmo(f),e=EMO[ek];
   let style=e[0],mode=e[2],energy=e[3],bpm=Math.round((e[1][0]+e[1][1])/2);
   if(p.tempo)bpm=clamp(Math.round((p.tempo[0]+p.tempo[1])/2),e[1][0]-8,e[1][1]+8);
@@ -340,12 +381,12 @@ function buildPromptPair(plan,parsed){
 function composeMusic(plan,seed){
   const rng=mulberry32((seed>>>0)||1),beat=60/plan.bpm;
   const styleProf=STYLE_MUSIC[plan.style]||STYLE_MUSIC['流行'],ref=plan.ref||null;
-  const prof=Object.assign({},styleProf,ref?{shape:ref.shape,rhythm:ref.rhythm,register:ref.register}:{});
-  let prog=(plan.mode==='maj'?prof.prog.maj:prof.prog.min).slice();
-  if(ref&&prog.length>1){const rot=ref.color%prog.length;prog=prog.slice(rot).concat(prog.slice(0,rot));}
+  const refProf=ref?(ref.arr||refArrangement(ref)):null;
+  const prof=refProf?Object.assign({},styleProf,refProf):styleProf;
+  const prog=(plan.mode==='maj'?prof.prog.maj:prof.prog.min).slice();
   const scale=(plan.mode==='maj'?prof.scale.maj:prof.scale.min).slice();
   const triad=prof.triad.map((v,i)=>(i===1&&plan.mode==='min'&&v===4?3:v));
-  const base=noteMidi(plan.tonic+'4'),motif=buildMotif(prof,rng,ref);
+  const base=noteMidi(plan.tonic+'4'),motif=(refProf&&refProf.motif&&refProf.motif.length?refProf.motif:buildMotif(prof,rng,ref)).slice();
   const sNote=d=>scale[((d%scale.length)+scale.length)%scale.length]+12*Math.floor(d/scale.length);
   const ev=[];let bar=0,leadPrev=null;
   for(const[s0,len,lab]of plan.sections){
@@ -521,6 +562,8 @@ function planCard(p){
   else if(p.sources.tempo==='wave')src.push('节奏：参考音乐');
   if(p.sources.key==='wave')src.push('调性：参考音乐');
   if(p.sources.motif==='wave')src.push('音型：参考音乐');
+  if(p.sources.harmony==='wave')src.push('和声：参考音乐');
+  if(p.sources.timbre==='wave')src.push('音色/鼓型：参考音乐');
   if(p.sources.scene==='prompt')src.push('场景：提示词');
   if(p.sources.bans==='prompt')src.push('禁用：提示词');
   if(S.ref)src.push('参考：'+(S.ref.name?S.ref.name+' / ':'')+S.ref.bpm+'BPM / '+S.ref.tonic+(S.ref.mode==='maj'?'大调':'小调')+' / 能量'+S.ref.energy);
@@ -619,7 +662,8 @@ const TESTS=[
 ['B-04','合成时长恒 15 秒',()=>{const p=synthPlan(FIX,{emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,7);let m=0;for(const e of ev)m=Math.max(m,e.t+e.dur);if(m>15.01)throw'越界 '+m;return'事件最晚 '+m.toFixed(2)+'s ≤ 15s';}],
 ['B-06','参考音乐驱动节奏/调性',()=>{const base={emotions:['轻快'],scene:null,tempo:null,bans:[],unknown:[]};const no=synthPlan(FIX,base);const tone={bpm:132,tonic:'D',mode:'min',energy:84,source:'wave'};const yes=synthPlan(FIX,Object.assign({},base,{tone}));if(yes.bpm!==132)throw'BPM 未采用参考值：'+yes.bpm;if(yes.tonic!=='D'||yes.mode!=='min')throw'调性未采用参考值：'+yes.key;if(yes.sources.tempo!=='wave'||yes.sources.key!=='wave')throw'来源未标注参考音乐';if(yes.energy===no.energy)throw'能量未融合参考值';if(no.bpm===yes.bpm&&no.key===yes.key)throw'参考音乐未产生任何差异';return'BPM '+no.bpm+'→132，调性 '+no.key+'→'+yes.key+'，能量 '+no.energy+'→'+yes.energy;}],
 ['B-07','参考音频色度解析稳定',()=>{const c=new Array(12).fill(0);c[0]=1;c[4]=.8;c[7]=.6;const r=normalizeChroma(c);if(!r||r.tonic!=='C'||r.mode!=='maj')throw'大三和弦未识别为 C 大调：'+(r&&r.tonic+' '+r.mode);const bad=normalizeChroma(new Array(12).fill(0));if(bad!==null)throw'空色度未返回 null';return'色度 [C,E,G] → C 大调；空输入 → null';}],
-['B-08','参考音乐改变旋律音型',()=>{const parsed={emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]};const warm=REF_SAMPLES.find(s=>s.id==='warm'),dark=REF_SAMPLES.find(s=>s.id==='dark');const a=synthPlan(FIX,Object.assign({},parsed,{tone:sampleRef(warm)})),b=synthPlan(FIX,Object.assign({},parsed,{tone:sampleRef(dark)}));const la=composeMusic(a,77).filter(e=>e.type==='lead').slice(0,10).map(e=>e.notes[0].m).join(','),lb=composeMusic(b,77).filter(e=>e.type==='lead').slice(0,10).map(e=>e.notes[0].m).join(',');if(a.ref.shape===b.ref.shape)throw'两段参考被识别为同一音型';if(la===lb)throw'参考变化后主旋律仍相同';return a.ref.shape+' vs '+b.ref.shape+'，旋律签名不同';}],
+['B-08','参考音乐驱动整段编排',()=>{const parsed={emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]};const mk=id=>{const s=REF_SAMPLES.find(x=>x.id===id);return composeMusic(synthPlan(FIX,Object.assign({},parsed,{tone:sampleRef(s)})),77);};const ea=mk('warm'),eb=mk('dark'),ec=mk('rush');const sig=ev=>ev.filter(e=>e.type==='lead').slice(0,10).map(e=>e.notes[0].m).join(',');const chord=ev=>ev.filter(e=>e.type==='pad').slice(0,4).map(e=>e.notes.map(n=>n.m).join('.')).join('|');const drum=ev=>ev.filter(e=>e.type==='kick'||e.type==='snare'||e.type==='hat').length;const timbre=ev=>Array.from(new Set(ev.filter(e=>e.notes).map(e=>e.wave||e.type))).sort().join(',');const L=[sig(ea),sig(eb),sig(ec)],C=[chord(ea),chord(eb),chord(ec)];if(new Set(L).size!==3)throw'三段参考主旋律仍有重复';if(new Set(C).size!==3)throw'三段参考和声仍有重复';if(new Set([drum(ea),drum(eb),drum(ec)]).size<2)throw'鼓型未随参考变化';if(new Set([timbre(ea),timbre(eb),timbre(ec)]).size<2)throw'音色未随参考变化';return'3/3 旋律与和声各异，鼓点 '+drum(ea)+'/'+drum(eb)+'/'+drum(ec);}],
+['B-09','真实上传参考不退化',()=>{const parse={emotions:['轻快'],scene:null,tempo:null,bans:[],unknown:[]};const flat={bpm:120,tonic:'E',mode:'min',energy:47,brightness:0,dyn:53,zcr:5.2,name:'upload.mp3',chroma:new Array(12).fill(1/12)};const dark={bpm:96,tonic:'D',mode:'min',energy:34,brightness:.28,dyn:30,zcr:1.8,name:'dark.mp3',chroma:[.03,.02,.76,.02,.03,.62,.02,.03,.03,.54,.02,.03]};const a=synthPlan(FIX,Object.assign({},parse,{tone:flat})),b=synthPlan(FIX,Object.assign({},parse,{tone:dark}));if(!a.ref||!a.ref.arr)throw'亮度为0的参考未生成编排层';const sig=p=>composeMusic(p,9).filter(x=>x.type==='lead').slice(0,8).map(x=>x.notes[0].m).join(',');if(sig(a)===sig(b))throw'平坦色度参考与暗色参考听感未区分';return'亮度0/平坦色度参考仍生成编排层，且旋律与暗色参考不同';}],
 ['B-05','七种风格旋律/和声互不相同',()=>{const emo={'氛围电子':'温暖','电子':'科技','复古电子':'复古','流行':'轻快','钢琴叙事':'悲伤','管弦':'大气','摇滚':'热血'},sigs={},chords={};for(const st in STYLE_MUSIC){const p=synthPlan(FIX,{emotions:[emo[st]],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,42);for(const e of ev){if(!isFinite(e.t)||!isFinite(e.dur)||!isFinite(e.gain))throw st+' 出现非有限参数';for(const n of e.notes||[])if(!isFinite(n.m)||!isFinite(m2f(n.m)))throw st+' 音符越界（'+e.type+'）';}const lead=ev.filter(e=>e.type==='lead').slice(0,8).map(e=>e.notes[0].m).join(','),pad=ev.filter(e=>e.type==='pad').slice(0,4).map(e=>e.notes.map(n=>n.m).join('.')).join('|');if(!lead)throw st+' 无主旋律';sigs[st]=lead;chords[st]=pad;}const ls=new Set(Object.values(sigs)),cs=new Set(Object.values(chords));if(ls.size!==Object.keys(STYLE_MUSIC).length)throw'旋律重复：'+Object.entries(sigs).filter(([k])=>Object.values(sigs).filter(v=>v===sigs[k]).length>1).map(([k])=>k).join('、');if(cs.size<4)throw'和声重复过多（'+cs.size+' 种）';return'7/7 旋律各异，和声 '+cs.size+' 种，参数全为有限值';}],
 ['S-01','方案合成纯函数确定性',()=>{const a=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]}),b=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]});if(JSON.stringify(a)!==JSON.stringify(b))throw'输出不一致';if(a.sources.tempo!=='prompt')throw'来源标记错';return'同输入两次输出逐字节一致';}],
 ['S-02','禁用项解析',()=>{const p=parsePrompt('温暖治愈，适合产品发布片开头，不要人声，不要太吵');if(!p.bans.includes('人声')||!p.bans.includes('吵闹'))throw'禁用项不全';if(p.scene!=='产品发布')throw'场景错';return'识别【'+p.bans.join('、')+'】+ 场景【产品发布】';}],

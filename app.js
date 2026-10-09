@@ -92,6 +92,27 @@ function parsePrompt(text){
   return{emotions,scene,tempo,bans,unknown};
 }
 const baseInst=s=>s==='电子'||s==='摇滚'||s==='复古电子'?['合成Pad','合成贝斯','轻鼓']:s==='流行'?['钢琴','拨弦','贝斯','轻鼓']:s==='钢琴叙事'?['钢琴','弦乐Pad']:s==='管弦'?['弦乐Pad','拨弦','轻鼓']:['合成Pad','钢琴'];
+/* 风格音乐层：每种风格有自己的和声进行、音阶、动机轮廓、低音型与鼓型，
+   避免"换个风格只是换速度/音色、旋律还是同一条"的问题 */
+const STYLE_MUSIC={
+  '氛围电子':{prog:{maj:[0,5,9,7],min:[0,3,7,5]},scale:{maj:[0,2,4,7,9],min:[0,3,5,7,10]},shape:'wave',rhythm:[3,1,2,2],wave:'triangle',bassWave:'sine',leadWave:'triangle',triad:[0,7,14],bass:2,drums:'none',register:12,piano:'pad'},
+  '电子':{prog:{maj:[0,7,3,10],min:[0,3,10,5]},scale:{maj:[0,2,4,7,9],min:[0,2,3,7,10]},shape:'arp',rhythm:[1,1,1,2,1],wave:'square',bassWave:'sawtooth',leadWave:'sawtooth',triad:[0,3,7],bass:1,drums:'four',register:12,piano:'stab'},
+  '复古电子':{prog:{maj:[0,9,5,7],min:[0,5,3,10]},scale:{maj:[0,2,4,7,9],min:[0,2,3,5,7,10]},shape:'ostinato',rhythm:[1,1,2,1,1],wave:'square',bassWave:'square',leadWave:'square',triad:[0,3,7],bass:1,drums:'pulse',register:12,piano:'stab'},
+  '流行':{prog:{maj:[0,7,9,5],min:[0,8,3,10]},scale:{maj:[0,2,4,7,9],min:[0,3,5,7,10]},shape:'arch',rhythm:[2,2,1,1],wave:'triangle',bassWave:'triangle',leadWave:'sine',triad:[0,4,7],bass:2,drums:'back',register:12,piano:'block'},
+  '钢琴叙事':{prog:{maj:[0,5,9,7],min:[0,5,8,7]},scale:{maj:[0,2,4,5,7,9],min:[0,2,3,5,7,10]},shape:'descend',rhythm:[3,2,1,2],wave:'sine',bassWave:'sine',leadWave:'sine',triad:[0,3,7,10],bass:3,drums:'none',register:0,piano:'broken'},
+  '管弦':{prog:{maj:[0,5,9,7],min:[0,3,7,5]},scale:{maj:[0,2,4,5,7,9],min:[0,2,3,5,7,10]},shape:'leap',rhythm:[3,3,2,2],wave:'sawtooth',bassWave:'triangle',leadWave:'sawtooth',triad:[0,7,12],bass:2,drums:'soft',register:12,piano:'pad'},
+  '摇滚':{prog:{maj:[0,5,7,3],min:[0,3,7,10]},scale:{maj:[0,2,4,7,9],min:[0,3,5,7,10]},shape:'riff',rhythm:[1,1,2,1],wave:'square',bassWave:'sawtooth',leadWave:'square',triad:[0,3,7],bass:1,drums:'rock',register:12,piano:'stab'}
+};
+const SHAPES={wave:[0,1,2,1,0,-1,0,2],arp:[0,2,4,2,0,2,4,6],ostinato:[0,3,0,2,0,3,4,3],arch:[0,1,2,4,2,1,0,-1],descend:[4,3,2,1,2,1,0,-1],leap:[0,4,-1,5,1,-2,6,2],riff:[0,0,4,4,2,2,0,-3]};
+function buildMotif(prof,rng){
+  const shape=SHAPES[prof.shape]||SHAPES.arch;
+  const flip=rng()<.5?-1:1,step=prof.shape==='arp'||prof.shape==='riff'?1:2;
+  return shape.map((d,i)=>{
+    const jitter=rng()<.25?(rng()<.5?1:-1):0;
+    const lift=rng()<.1?3:0;
+    return Math.max(-3,Math.min(6,Math.round(d*step*flip+i*.5)+jitter+lift));
+  });
+}
 function synthPlan(f,p){
   const conflicts=[],src={emotion:p.emotions.length?'prompt':'image',tempo:p.tempo?'prompt':'none',scene:p.scene?'prompt':'none',bans:p.bans.length?'prompt':'none'};
   const ek=p.emotions.length?p.emotions[0]:inferEmo(f),e=EMO[ek];
@@ -132,41 +153,77 @@ function buildPromptPair(plan,parsed){
 }
 function composeMusic(plan,seed){
   const rng=mulberry32((seed>>>0)||1),beat=60/plan.bpm;
-  const prog=plan.mode==='maj'?[0,7,9,5]:[0,8,3,10],th=plan.mode==='maj'?4:3;
-  const base=noteMidi(plan.tonic+'4'),pent=plan.mode==='maj'?[0,2,4,7,9,12]:[0,3,5,7,10,12];
-  const ev=[];let bar=0;
+  const prof=STYLE_MUSIC[plan.style]||STYLE_MUSIC['流行'];
+  const prog=(plan.mode==='maj'?prof.prog.maj:prof.prog.min).slice();
+  const scale=(plan.mode==='maj'?prof.scale.maj:prof.scale.min).slice();
+  const triad=prof.triad.map((v,i)=>(i===1&&plan.mode==='min'&&v===4?3:v));
+  const base=noteMidi(plan.tonic+'4'),motif=buildMotif(prof,rng);
+  const sNote=d=>scale[((d%scale.length)+scale.length)%scale.length]+12*Math.floor(d/scale.length);
+  const ev=[];let bar=0,leadPrev=null;
   for(const[s0,len,lab]of plan.sections){
     const end=s0+len,gk=lab==='渐入'||lab==='铺底'?0.55:lab==='渐出'||lab==='收束'?0.7:1;
     const drum=lab==='主题'||lab==='起伏'||lab==='渐出';
     for(let t=s0;t<end-0.001;t+=beat*2,bar++){
-      const root=base-12+prog[bar%4],tri=[root,root+th,root+7];
-      if(!plan.noPad)ev.push({type:'pad',t,dur:Math.min(beat*2,end-t),gain:.1*gk,notes:tri.map(m=>({m:m+12}))});
-      if(!plan.noBass)ev.push({type:'bass',t,dur:Math.min(beat*1.8,end-t),gain:.22*gk,notes:[{m:root-12}]});
+      const root=base-12+prog[bar%prog.length],tri=[root,root+triad[1],root+triad[2],root+triad[3]];
+      if(!plan.noPad)ev.push({type:'pad',t,dur:Math.min(beat*2,end-t),gain:.1*gk,wave:prof.wave,notes:triad.map(m=>({m:root+m+12}))});
+      if(!plan.noBass){
+        if(prof.bass===1){
+          for(let k=0;k<2;k++){const bt=t+k*beat;if(bt+beat*.9<end)ev.push({type:'bass',t:bt,dur:beat*.9,gain:.2*gk,wave:prof.bassWave,notes:[{m:root-12}]});}
+        }else if(prof.bass===3){
+          const walk=[0,0,2,1];
+          for(let k=0;k<4;k++){const bt=t+k*beat*.5;if(bt+beat*.45<end)ev.push({type:'bass',t:bt,dur:beat*.45,gain:.16*gk,wave:prof.bassWave,notes:[{m:root-12+sNote(walk[k])}]});}
+        }else ev.push({type:'bass',t,dur:Math.min(beat*1.9,end-t),gain:.22*gk,wave:prof.bassWave,notes:[{m:root-12}]});
+      }
       if(!plan.noDrum&&drum){
-        if(t+0.2<end)ev.push({type:'kick',t,dur:.18,gain:.26*gk});
-        if(plan.energy>70&&t+beat+0.2<end)ev.push({type:'kick',t:t+beat,dur:.16,gain:.2*gk});
-        if(plan.energy>45){
+        const d=prof.drums;
+        if(d==='four'){
+          for(let k=0;k<4;k++){const kt=t+k*beat*.5;if(kt+.18<end)ev.push({type:'kick',t:kt,dur:.16,gain:(k%2?0.15:0.28)*gk});}
+        }else if(d==='rock'){
+          if(t+.2<end)ev.push({type:'kick',t,dur:.18,gain:.3*gk});
+          if(t+beat+.2<end)ev.push({type:'kick',t:t+beat,dur:.16,gain:.2*gk});
+          if(t+beat*1.5+.15<end)ev.push({type:'snare',t:t+beat*1.5,dur:.2,gain:.17*gk});
+        }else if(d==='back'){
+          if(t+.2<end)ev.push({type:'kick',t,dur:.18,gain:.26*gk});
+          if(t+beat*1.5+.15<end)ev.push({type:'snare',t:t+beat*1.5,dur:.2,gain:.15*gk});
+        }else if(d==='pulse'||d==='soft'){
+          if(t+.2<end)ev.push({type:'kick',t,dur:.18,gain:.24*gk});
+        }
+        if(d!=='none'&&plan.energy>45){
           if(t+beat*0.55<end)ev.push({type:'hat',t:t+beat*0.5,dur:.05,gain:.055*gk});
           if(t+beat*1.55<end)ev.push({type:'hat',t:t+beat*1.5,dur:.05,gain:.05*gk});
         }
       }
       if(!plan.noPiano){
-        const st=lab==='渐入'||lab==='铺底'?2:4;
-        for(let si=0;si<st;si++){
-          const pt=t+si*(beat*2/st);if(pt+0.15>=end)break;
-          ev.push({type:'piano',t:pt,dur:Math.min(beat*2/st*0.9,end-pt),gain:.16*gk,notes:[{m:tri[si%3]+(si>=3?12:0)}]});
+        if(prof.piano==='broken'){
+          const arp=[triad[0],triad[1],triad[2],triad[0]+12,triad[2],triad[1]];
+          for(let si=0;si<6;si++){const pt=t+si*(beat*2/6);if(pt+.15>=end)break;ev.push({type:'piano',t:pt,dur:Math.min(beat*.55,end-pt),gain:.15*gk,wave:'sine',notes:[{m:root+arp[si%arp.length]+12}]});}
+        }else if(prof.piano==='block'){
+          for(let si=0;si<2;si++){const pt=t+si*beat;if(pt+.2>=end)break;ev.push({type:'piano',t:pt,dur:Math.min(beat*.9,end-pt),gain:.14*gk,wave:prof.wave,notes:triad.map(m=>({m:root+m+12}))});}
+        }else if(prof.piano==='stab'){
+          const pt=t+beat*(rng()<.5?.5:1.5);if(pt+.2<end)ev.push({type:'piano',t:pt,dur:Math.min(beat*.5,end-pt),gain:.13*gk,wave:prof.wave,notes:triad.map(m=>({m:root+m+12}))});
+        }else{
+          const st=lab==='渐入'||lab==='铺底'?2:4;
+          for(let si=0;si<st;si++){
+            const pt=t+si*(beat*2/st);if(pt+0.15>=end)break;
+            const pick=1+(si%Math.max(1,triad.length-1));
+            ev.push({type:'piano',t:pt,dur:Math.min(beat*2/st*0.9,end-pt),gain:.16*gk,wave:'triangle',notes:[{m:root+triad[pick]+(si>=3?12:0)}]});
+          }
         }
       }
       if(plan.instruments.includes('拨弦')&&rng()<0.6){
         const pt=t+beat*(0.5+rng()*1.2);
-        if(pt+0.4<end)ev.push({type:'pluck',t:pt,dur:.35,gain:.09*gk,notes:[{m:base+12+pent[rng()*5|0]}]});
+        if(pt+0.4<end)ev.push({type:'pluck',t:pt,dur:.35,gain:.09*gk,wave:'triangle',notes:[{m:root+scale[rng()*scale.length|0]+24}]});
       }
       if(!plan.noLead&&(lab==='主题'||lab==='起伏')){
-        let lt=t+rng()*beat*0.5;
-        while(lt+beat*0.5<end){
-          const dc=[beat*0.5,beat,beat*1.5][rng()*3|0];
-          ev.push({type:'lead',t:lt,dur:Math.min(dc*0.85,end-lt),gain:.11*gk,notes:[{m:base+12+pent[rng()*pent.length|0]}]});
-          lt+=dc;
+        const rh=prof.rhythm;let lt=t+rng()*beat*0.4,ri=0;
+        while(lt+beat*0.4<end&&ri<rh.length*2){
+          const raw=(bar*2+ri)%motif.length,oct=prof.register;
+          let m=root+sNote(motif[raw])+oct;
+          if(leadPrev!==null){while(m-leadPrev>7)m-=12;while(leadPrev-m>7)m+=12;}
+          leadPrev=m;
+          const dc=beat*rh[ri%rh.length];
+          ev.push({type:'lead',t:lt,dur:Math.min(dc*.88,end-lt),gain:.11*gk,wave:prof.leadWave,notes:[{m}]});
+          lt+=Math.min(dc,end-lt);ri++;
         }
       }
     }
@@ -189,9 +246,14 @@ async function renderBuffer(events){
       o.frequency.setValueAtTime(150,e.t);o.frequency.exponentialRampToValueAtTime(40,e.t+.12);
       const g=ctx.createGain();g.gain.setValueAtTime(e.gain,e.t);g.gain.exponentialRampToValueAtTime(.001,e.t+e.dur);
       o.connect(g);g.connect(ma);o.start(e.t);o.stop(e.t+e.dur+.02);
+    }else if(e.type==='snare'){
+      const s=ctx.createBufferSource();s.buffer=nb;s.playbackRate.value=1;
+      const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;f.Q.value=.9;
+      const g=ctx.createGain();g.gain.setValueAtTime(e.gain,e.t);g.gain.exponentialRampToValueAtTime(.001,e.t+e.dur);
+      s.connect(f);f.connect(g);g.connect(ma);s.start(e.t);s.stop(e.t+e.dur+.02);
     }else for(const nt of e.notes){
       const o=ctx.createOscillator(),g=ctx.createGain();
-      o.type=e.type==='pad'?'sawtooth':e.type==='piano'?'sine':e.type==='lead'?'sawtooth':'triangle';
+      o.type=e.wave||(e.type==='pad'?'sawtooth':e.type==='piano'?'sine':e.type==='lead'?'sawtooth':'triangle');
       o.frequency.value=m2f(nt.m);
       if(e.type==='pad'){
         g.gain.setValueAtTime(.0001,e.t);
@@ -355,10 +417,11 @@ function setAudio(u){const a=$('player');if(a.src&&a.src.indexOf('blob:')===0){t
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(_){}ta.remove();return ok;}}
 const FIX={hue:210,brightness:.45,saturation:.35,density:.3,subjectStrength:55};
 const TESTS=[
-['B-01','色调→主音映射确定性',()=>{if(hueTonic(0)!=='C'||hueTonic(210)!=='A'||hueTonic(359)!=='B')throw'映射不符';return'hue 0→C、210→A、359→B，纯查表';}],
+['B-01','色调→主音映射确定性',()=>{if(hueTonic(0)!=='C'||hueTonic(210)!=='G'||hueTonic(359)!=='B')throw'映射不符';return'hue 0→C、210→G、359→B，纯查表';}],
 ['B-02','WAV 头 44 字节规范',()=>{const ab=encodeWav({sampleRate:44100,getChannelData:()=>new Float32Array([0,.5,-.5,1,.25])}),v=new DataView(ab);if(String.fromCharCode(v.getUint8(0),v.getUint8(1),v.getUint8(2),v.getUint8(3))!=='RIFF')throw'RIFF 错误';if(v.getUint32(40,true)!==10||ab.byteLength!==54)throw'长度错误';return'RIFF/WAVE 头与 data 长度正确';}],
 ['B-03','伪随机种子可复现',()=>{const r1=mulberry32(12345),r2=mulberry32(12345);for(let i=0;i<8;i++)if(r1()!==r2())throw'序列不一致';return'同种子两次序列完全一致';}],
 ['B-04','合成时长恒 15 秒',()=>{const p=synthPlan(FIX,{emotions:['温暖'],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,7);let m=0;for(const e of ev)m=Math.max(m,e.t+e.dur);if(m>15.01)throw'越界 '+m;return'事件最晚 '+m.toFixed(2)+'s ≤ 15s';}],
+['B-05','七种风格旋律/和声互不相同',()=>{const emo={'氛围电子':'温暖','电子':'科技','复古电子':'复古','流行':'轻快','钢琴叙事':'悲伤','管弦':'大气','摇滚':'热血'},sigs={},chords={};for(const st in STYLE_MUSIC){const p=synthPlan(FIX,{emotions:[emo[st]],scene:null,tempo:null,bans:[],unknown:[]}),ev=composeMusic(p,42);for(const e of ev){if(!isFinite(e.t)||!isFinite(e.dur)||!isFinite(e.gain))throw st+' 出现非有限参数';for(const n of e.notes||[])if(!isFinite(n.m)||!isFinite(m2f(n.m)))throw st+' 音符越界（'+e.type+'）';}const lead=ev.filter(e=>e.type==='lead').slice(0,8).map(e=>e.notes[0].m).join(','),pad=ev.filter(e=>e.type==='pad').slice(0,4).map(e=>e.notes.map(n=>n.m).join('.')).join('|');if(!lead)throw st+' 无主旋律';sigs[st]=lead;chords[st]=pad;}const ls=new Set(Object.values(sigs)),cs=new Set(Object.values(chords));if(ls.size!==Object.keys(STYLE_MUSIC).length)throw'旋律重复：'+Object.entries(sigs).filter(([k])=>Object.values(sigs).filter(v=>v===sigs[k]).length>1).map(([k])=>k).join('、');if(cs.size<4)throw'和声重复过多（'+cs.size+' 种）';return'7/7 旋律各异，和声 '+cs.size+' 种，参数全为有限值';}],
 ['S-01','方案合成纯函数确定性',()=>{const a=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]}),b=synthPlan(FIX,{emotions:['科技'],scene:'产品发布',tempo:[110,130],bans:['人声'],unknown:[]});if(JSON.stringify(a)!==JSON.stringify(b))throw'输出不一致';if(a.sources.tempo!=='prompt')throw'来源标记错';return'同输入两次输出逐字节一致';}],
 ['S-02','禁用项解析',()=>{const p=parsePrompt('温暖治愈，适合产品发布片开头，不要人声，不要太吵');if(!p.bans.includes('人声')||!p.bans.includes('吵闹'))throw'禁用项不全';if(p.scene!=='产品发布')throw'场景错';return'识别【'+p.bans.join('、')+'】+ 场景【产品发布】';}],
 ['S-03','未识别词显性收集',()=>{const p=parsePrompt('雨天里的霓虹闪烁');if(!p.unknown.length)throw'未收集';return'未识别词：'+p.unknown.join('、');}],

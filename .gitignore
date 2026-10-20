@@ -1,2 +1,27 @@
-node_modules/
 .DS_Store
+node_modules/
+__pycache__/
+*.pyc
+
+# Local credentials and login state
+.env
+bridge/.env
+bridge/.feishu-user.json
+
+# Runtime data and generated deliverables
+data/
+artifacts/
+
+# Source materials and generated media
+*.pdf
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.flac
+*.amr
+*.ogg
+*.wma
+*.opus
+*.mp4
+*.mov

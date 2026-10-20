@@ -1,0 +1,61 @@
+{
+  "name": "algo-requirement-spec",
+  "version": "1.5.0",
+  "description": "Turn a requirement prototype PDF, a requirement review recording and a previously hand-written requirement breakdown into an algorithm and backend requirement document that only fills the supplied template. AI product perspective only, no implementation design.",
+  "author": {
+    "name": "AI 产品",
+    "email": ""
+  },
+  "agents": [
+    "./agents/algo-requirement-spec.md"
+  ],
+  "expertType": "agent",
+  "agentName": "algo-requirement-spec",
+  "displayName": {
+    "en": "Algorithm Requirement Spec Expert",
+    "zh": "算法需求拆解专家"
+  },
+  "profession": {
+    "en": "Algorithm Requirement Specialist",
+    "zh": "算法需求拆解专家"
+  },
+  "displayDescription": {
+    "en": "Fills the fixed requirement-breakdown template for architects, algorithm and backend teams. Covers function entry, new features, algorithm capabilities, target effect, model output rules, frontend alignment, backend scope and edge cases, all inside the template's own sections. Product view only, no implementation design.",
+    "zh": "按固定需求拆解模版，把需求原型、评审录音和历史人工拆解整理成算法与后端需求拆解文档，面向架构师、算法与后端。补充功能入口、新增功能、算法能力与目标效果、大模型输出规则、前后端配合点、后端建设范围和特殊情况处理，效果、测试、风险与待确认都写在模版既有小节内。只写产品要求与功能流程，不定义字段、接口和研发实现，细节留给研发补充。"
+  },
+  "avatar": "avatars/expert.png",
+  "categoryId": "01-ProductDesign",
+  "defaultInitPrompt": {
+    "zh": "请根据需求原型、评审录音和历史需求拆解，按固定模版输出算法与后端需求拆解文档。若用户提供 CoDesign 原型链接和密码，必须先调用 codesign-export 技能读取、导出并逐页审查原型；用户无需另行指定技能。只补充模版规定的内容。",
+    "en": "Here are the requirement prototype, the review recording and a past breakdown. Produce an algorithm and backend requirement document that only fills the supplied template."
+  },
+  "plugin": "algo-requirement-spec",
+  "tags": [
+    {
+      "en": "Algorithm Requirements",
+      "zh": "算法需求拆解"
+    },
+    {
+      "en": "Model Output Rules",
+      "zh": "大模型输出规则"
+    },
+    {
+      "en": "Backend Alignment",
+      "zh": "后端与前端对齐"
+    }
+  ],
+  "quickPrompts": [
+    {
+      "zh": "这是需求原型 PDF、评审录音和历史需求拆解，请按固定模版出一版算法与后端需求拆解文档，只补充模版规定的内容。",
+      "en": "Here are the requirement prototype, the review recording and a past breakdown. Produce an algorithm and backend requirement document that only fills the supplied template."
+    },
+    {
+      "zh": "这次没有评审录音，只有原型和历史拆解文档，请照常产出，并把因此无法确认的口径标出来。",
+      "en": "There is no review recording this time, only the prototype and a past breakdown. Produce the document anyway and flag what cannot be confirmed as a result."
+    },
+    {
+      "zh": "按固定模版继续，帮我补全算法功能、目标效果和异常降级，写在模版既有小节里，不要新增章节，也不要写研发实现。",
+      "en": "Continue with the fixed template, fill in the algorithm capabilities, target effect and exception fallbacks inside the template's own sections, without adding chapters or designing the implementation."
+    }
+  ]
+}

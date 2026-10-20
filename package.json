@@ -1,0 +1,15 @@
+{
+  "name": "requirement-cockpit-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A local requirement workflow cockpit connected to WorkBuddy agents, Feishu documents and iMa knowledge search.",
+  "scripts": {
+    "start": "node bridge/start.mjs",
+    "seed": "node bridge/seed.mjs",
+    "agents:install": "python3 agents/algo-requirement-spec/install_agent.py"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

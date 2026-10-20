@@ -1,148 +1,2454 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>素材成曲 · 可行性验证</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求协作台</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #d87943;
+      --brand-strong: #be6232;
+      --brand-2: #e29464;
+      --brand-soft: #faece4;
+      --brand-soft-2: #efd2c2;
+      --green: #527575;
+      --green-soft: #eaf0ef;
+      --amber: #b7791f;
+      --amber-soft: #fbf3e4;
+      --red: #b74c3c;
+      --red-soft: #faeae7;
+      --track: #e5e7eb;
+      --shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 1px 3px rgba(17, 24, 39, .06);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 232px;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      flex-shrink: 0;
+    }
+
+    .brand { padding: 20px 18px 16px; border-bottom: 1px solid var(--line); }
+    .brand-top { display: flex; align-items: center; gap: 10px; }
+    .brand .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(140deg, var(--brand-2), var(--brand));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .brand strong { color: var(--ink); font-size: 15px; display: block; }
+    .brand small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+    .nav-group {
+      font-size: 11px;
+      color: #9aa1ac;
+      padding: 12px 10px 6px;
+      letter-spacing: .04em;
+    }
+    .nav button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 11px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #4b5563;
+      text-align: left;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .nav button svg { width: 16px; height: 16px; stroke-width: 1.8; flex-shrink: 0; }
+    .nav button:hover { background: #f6f7f9; color: var(--ink); }
+    .nav button.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+    .sidebar-foot { padding: 14px 16px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+    .topbar {
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      gap: 14px;
+    }
+
+    .crumb { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .crumb strong { color: var(--ink); }
+
+    .search {
+      flex: 1;
+      max-width: 340px;
+      background: #f6f7f9;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #9aa1ac;
+      font-size: 12px;
+    }
+
+    .top-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .mode-badge {
+      background: var(--brand-soft);
+      color: var(--brand);
+      border: 1px solid var(--brand-soft-2);
+      border-radius: 999px;
+      padding: 4px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--brand-soft);
+      color: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      border: 1px solid var(--brand-soft-2);
+    }
+
+    .content { padding: 22px; max-width: 1400px; width: 100%; margin: 0 auto; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin: 0; }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .btn:hover { border-color: var(--brand-soft-2); background: #f8fafb; }
+    .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn.primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
+    .btn.small { padding: 5px 10px; font-size: 12px; }
+    .kb-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .kb-actions .btn.small { padding: 4px 9px; font-size: 11px; text-decoration: none; white-space: nowrap; }
+    .btn.ghost { background: transparent; }
+
+    .hero {
+      background: linear-gradient(105deg, #fff8f4 0%, #f7f8fa 100%);
+      border: 1px solid #eceff3;
+      border-radius: 14px;
+      padding: 22px 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .hero .kicker {
+      color: var(--brand);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+    .hero h2 { margin: 0 0 8px; font-size: 24px; letter-spacing: 0; }
+    .hero p { margin: 0; color: #5f6672; font-size: 13px; line-height: 1.7; max-width: 560px; }
+
+    .hero-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+    .hero-flow span {
+      background: rgba(255, 255, 255, .75);
+      border: 1px solid #efd4c4;
+      color: #a6532d;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .hero-flow i { color: #d9b7a4; font-style: normal; font-size: 11px; }
+
+    .hero-stats { display: flex; gap: 26px; flex-shrink: 0; }
+    .hero-stats .stat { text-align: right; }
+    .hero-stats .stat strong { display: block; font-size: 26px; color: var(--brand); line-height: 1.2; }
+    .hero-stats .stat span { color: #737b86; font-size: 11px; }
+
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+    .metric {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric .label { color: var(--muted); font-size: 12px; }
+    .metric .value { font-size: 24px; font-weight: 700; margin-top: 5px; }
+    .metric .value.accent { color: var(--brand); }
+    .metric .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 { font-size: 15px; margin: 0; }
+    .panel-body { padding: 16px; }
+
+    .pipeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .stage-card {
+      background: #f7f8fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      position: relative;
+    }
+
+    .stage-card .stage-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stage-card.done .stage-num { background: var(--green-soft); color: var(--green); }
+    .stage-card.active .stage-num { background: var(--brand); color: #fff; }
+    .stage-card.risk .stage-num { background: var(--amber-soft); color: var(--amber); }
+    .stage-card .stage-name { font-size: 12.5px; font-weight: 600; margin-bottom: 4px; }
+    .stage-card .stage-state { font-size: 11px; color: var(--muted); }
+    .stage-card .stage-brief { font-size: 11px; color: #8b93a0; margin-top: 6px; line-height: 1.5; }
+    .stage-card .stage-role { font-size: 10.5px; color: var(--brand); margin-top: 7px; font-weight: 600; }
+    .stage-card.active { border-color: var(--brand-soft-2); background: var(--brand-soft); }
+    .stage-card .stage-risk { font-size: 10px; color: var(--amber); margin-top: 6px; font-weight: 600; }
+
+    .dashboard-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+    .req-row {
+      display: grid;
+      grid-template-columns: 2.4fr .9fr .8fr .8fr;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .req-row:last-child { border-bottom: 0; }
+    .req-row .title { font-weight: 600; }
+    .req-row .meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge.brand { background: var(--brand-soft); color: var(--brand); }
+    .badge.green { background: var(--green-soft); color: var(--green); }
+    .badge.amber { background: var(--amber-soft); color: var(--amber); }
+    .badge.red { background: var(--red-soft); color: var(--red); }
+    .badge.gray { background: #f3f4f6; color: #6b7280; }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #4b5563;
+      border-radius: 999px;
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .chip:hover { border-color: var(--brand-soft-2); color: var(--brand); }
+    .chip.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+    .risk-list { display: flex; flex-direction: column; gap: 4px; }
+    .risk-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .risk-item:last-child { border-bottom: 0; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; padding: 0; border: 0; }
+    .dot.red { background: var(--red); }
+    .dot.amber { background: var(--brand-2); }
+    .dot.brand { background: var(--brand); }
+    .dot.green { background: var(--green); }
+    .risk-item strong { display: block; font-size: 12.5px; }
+    .risk-item span { color: var(--muted); font-size: 11.5px; }
+
+    .req-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+    .req-title { font-size: 20px; margin: 0 0 8px; }
+    .req-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; }
+    .req-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .stepper { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 16px; }
+    .step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: left;
+      position: relative;
+    }
+
+    .step:hover { border-color: var(--brand-soft-2); }
+    .step.active { border-color: var(--brand); background: var(--brand-soft); }
+    .step.done { border-color: #cfe0dc; }
+    .step .s-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .step .s-name { font-size: 12px; font-weight: 600; }
+    .step .s-status { font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+    .step .s-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+    .step.done .s-dot { background: var(--green); }
+    .step.active .s-dot { background: var(--brand); }
+    .step.risk .s-dot { background: var(--amber); }
+
+    .detail-grid { display: grid; grid-template-columns: 1.8fr .9fr; gap: 16px; align-items: start; }
+    .section-title { font-size: 14px; font-weight: 700; margin: 0 0 10px; }
+
+    .doc-block { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fff; margin-bottom: 12px; }
+    .doc-block:last-child { margin-bottom: 0; }
+    .doc-block h3 { font-size: 13px; margin: 0 0 8px; }
+    .doc-block p { margin: 0 0 8px; color: #374151; font-size: 13px; }
+    .doc-block p:last-child { margin-bottom: 0; }
+    .doc-block ul { margin: 0; padding-left: 18px; color: #374151; font-size: 13px; }
+    .doc-block li { margin: 4px 0; }
+    .artifact-block { background: #fff8f4; border-color: #efd2c2; }
+    .artifact-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .artifact-hint { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+    .stream-note { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+
+    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 7px 10px; font-size: 12px; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; }
+
+    .tag {
+      display: inline-block;
+      background: #f3f4f6;
+      color: #4b5563;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      margin: 0 5px 5px 0;
+    }
+
+    .tag.brand { background: var(--brand-soft); color: var(--brand); }
+    .tag.amber { background: var(--amber-soft); color: var(--amber); }
+    .tag.green { background: var(--green-soft); color: var(--green); }
+    .tag.red { background: var(--red-soft); color: var(--red); }
+
+    .side-list { display: flex; flex-direction: column; gap: 8px; }
+    .side-item { border: 1px solid var(--line); border-radius: 10px; padding: 11px; background: #fff; }
+    .side-item .label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+    .side-item .value { font-size: 12.5px; font-weight: 600; }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: grid; grid-template-columns: 92px 1fr 40px; gap: 10px; align-items: center; font-size: 12px; }
+    .bar-track { height: 9px; background: var(--track); border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; background: #d9dce1; }
+    .bar-fill.hot { background: linear-gradient(90deg, var(--brand-2), var(--brand)); }
+    .bar-fill.green { background: var(--green); }
+    .bar-fill.amber { background: var(--brand-2); }
+    .bar-row strong { color: var(--muted); font-weight: 600; text-align: right; }
+
+    .feed { display: flex; flex-direction: column; gap: 2px; }
+    .feed-item { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+    .feed-item:last-child { border-bottom: 0; }
+    .feed-item time { color: #9aa1ac; font-size: 11px; white-space: nowrap; padding-top: 1px; }
+    .feed-tag {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.5;
+      white-space: nowrap;
+      background: var(--brand-soft);
+      color: var(--brand);
+      margin-top: 1px;
+    }
+    .feed-tag.green { background: var(--green-soft); color: var(--green); }
+    .feed-tag.amber { background: var(--amber-soft); color: var(--amber); }
+    .feed-tag.gray { background: #f3f4f6; color: #6b7280; }
+
+    .table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .table th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #f7f8fa;
+      white-space: nowrap;
+    }
+
+    .table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .table tr:last-child td { border-bottom: 0; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, .45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal.open { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      width: min(760px, 96vw);
+      max-height: 88vh;
+      overflow: auto;
+      box-shadow: 0 24px 60px rgba(17, 24, 39, .24);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 2;
+    }
+
+    .modal-head h2 { font-size: 16px; margin: 0; }
+    .modal-body { padding: 18px; }
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 18px;
+      border-top: 1px solid var(--line);
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px;
+      resize: vertical;
+      outline: none;
+      background: #f7f8fa;
+    }
+
+    textarea:focus { border-color: var(--brand-2); box-shadow: 0 0 0 3px var(--brand-soft); background: #fff; }
+    .upload-zone {
+      border: 1px dashed #d9dde3;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      background: #f7f8fa;
+      margin-bottom: 12px;
+    }
+
+    .impact-box {
+      display: none;
+      border: 1px solid #efd2c2;
+      background: var(--brand-soft);
+      border-radius: 10px;
+      padding: 13px;
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #7c4d34;
+    }
+
+    .impact-box strong { color: var(--brand-strong); }
+    .impact-box.show { display: block; }
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: .2s;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .demo-guide {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: 336px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 20px 46px rgba(17, 24, 39, .32);
+      z-index: 80;
+      display: none;
+    }
+
+    .demo-guide.open { display: block; }
+    .demo-guide .g-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .demo-guide .g-step { font-size: 11px; color: #9aa1ac; }
+    .demo-guide h3 { font-size: 14px; margin: 0 0 6px; }
+    .demo-guide p { font-size: 12px; color: #d1d5db; margin: 0 0 12px; line-height: 1.65; }
+    .demo-guide .g-actions { display: flex; justify-content: space-between; align-items: center; }
+    .demo-guide .g-actions .btn { background: transparent; border-color: #4b5563; color: #d1d5db; }
+    .demo-guide .g-actions .btn:hover { background: rgba(255, 255, 255, .08); border-color: #6b7280; }
+    .demo-guide .g-actions .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .demo-guide .g-actions .btn.primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
+
+    .demo-highlight { animation: ring 1.4s ease 2; position: relative; z-index: 5; }
+    @keyframes ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(216, 121, 67, 0); }
+      50% { box-shadow: 0 0 0 5px rgba(216, 121, 67, .22); }
+    }
+
+    .minutes-doc { font-size: 13px; color: #374151; }
+    .minutes-doc h3 { font-size: 15px; margin: 0 0 4px; color: var(--ink); }
+    .minutes-doc .doc-meta { color: var(--muted); font-size: 11px; margin-bottom: 14px; }
+    .minutes-doc h4 { font-size: 12px; margin: 14px 0 6px; color: var(--ink); }
+    .minutes-doc ul { margin: 0; padding-left: 18px; }
+    .minutes-doc li { margin: 4px 0; }
+
+    .mobile-nav { display: none; }
+
+    @media (max-width: 1180px) {
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 1050px) {
+      .dashboard-grid, .detail-grid { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: repeat(3, 1fr); }
+      .hero { flex-direction: column; align-items: flex-start; }
+      .hero-stats { width: 100%; justify-content: space-between; gap: 12px; }
+      .hero-stats .stat { text-align: left; }
+    }
+
+    @media (max-width: 760px) {
+      .sidebar { display: none; }
+      .mobile-nav {
+        display: flex;
+        gap: 6px;
+        overflow: auto;
+        padding: 10px 14px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .mobile-nav button {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
+        padding: 6px 11px;
+        font-size: 12px;
+        color: #4b5563;
+        white-space: nowrap;
+      }
+
+      .mobile-nav button.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+      .topbar { padding: 0 14px; }
+      .search { display: none; }
+      .crumb { font-size: 11px; }
+      .content { padding: 14px; }
+      .page-head, .req-header { flex-direction: column; align-items: stretch; }
+      .page-head > div:last-child { justify-content: flex-start !important; }
+      .stepper, .pipeline { grid-template-columns: repeat(2, 1fr); }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .req-row { grid-template-columns: 1fr 1fr; }
+      .req-row .hide-mobile { display: none; }
+      .req-actions { justify-content: flex-start; }
+      .hero { padding: 18px; }
+      .hero h2 { font-size: 20px; }
+      .demo-guide { left: 14px; right: 14px; bottom: 14px; width: auto; }
+      .mobile-stack thead { display: none; }
+      .mobile-stack, .mobile-stack tbody, .mobile-stack tr, .mobile-stack td { display: block; width: 100%; }
+      .mobile-stack tr { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+      .mobile-stack tr:last-child { margin-bottom: 0; }
+      .mobile-stack td { border: 0; padding: 6px 0 6px 96px; position: relative; min-height: 28px; }
+      .mobile-stack td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 88px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .mobile-stack td:first-child { font-weight: 700; }
+      .bar-row { grid-template-columns: 78px 1fr 38px; }
+    }
+
+    /* 真实执行链路相关样式 */
+    .intake-grid { display: grid; grid-template-columns: 1.4fr 1fr .7fr; gap: 12px; margin-bottom: 12px; }
+    .intake-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+    .intake-grid input, .intake-grid select, .kb-input {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      font: inherit;
+      font-size: 13px;
+      background: #f7f8fa;
+      outline: none;
+      color: var(--ink);
+      width: 100%;
+    }
+    .intake-grid input:focus, .intake-grid select:focus, .kb-input:focus {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 3px var(--brand-soft);
+      background: #fff;
+    }
+    .intake-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .prototype-read { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff8f4; }
+    .prototype-read-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .prototype-read-head strong { font-size: 13px; }
+    .prototype-read-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .45fr) auto; gap: 8px; align-items: end; }
+    .prototype-read-fields label { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 11px; }
+    .prototype-read-fields input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #f7f8fa; color: var(--ink); outline: none; }
+    .prototype-read-fields input:focus { border-color: var(--brand-2); box-shadow: 0 0 0 3px var(--brand-soft); background: #fff; }
+    .prototype-read-result { display: none; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .prototype-read-result.show { display: block; }
+    .prototype-read-result a { color: var(--brand); }
+    @media (max-width: 720px) { .prototype-read-fields { grid-template-columns: 1fr; } .prototype-read-head { align-items: flex-start; } }
+    .btn.upload-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .upload-zone.upload-btn { cursor: pointer; border-style: dashed; }
+    .upload-zone.upload-btn:hover { border-color: var(--brand-soft-2); background: #fff4ee; color: var(--brand); }
+    .upload-list { display: none; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .upload-list.show { display: flex; }
+    .upload-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      border-radius: 999px;
+      padding: 3px 6px 3px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      max-width: 100%;
+    }
+    .upload-chip span { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .upload-chip b { cursor: pointer; font-weight: 700; opacity: .6; padding: 0 3px; }
+    .upload-chip b:hover { opacity: 1; }
+    .run-strip { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+    .run-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      background: #f7f8fa;
+    }
+    .run-chip i { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; font-style: normal; flex-shrink: 0; }
+    .run-chip.done { border-color: #cfe0dc; color: var(--green); background: var(--green-soft); }
+    .run-chip.done i { background: var(--green); }
+    .run-chip.busy { border-color: var(--brand-soft-2); color: var(--brand); background: var(--brand-soft); }
+    .run-chip.busy i { background: var(--brand); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+    .engine-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+    .running-note {
+      border: 1px dashed var(--brand-soft-2);
+      background: var(--brand-soft);
+      color: var(--brand-strong);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .run-clock {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--brand-soft-2);
+      font-size: 11.5px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .side-item .tags-inline { margin-top: 6px; }
+    .side-item .tags-inline .tag { font-size: 10px; padding: 2px 6px; }
+    .modal-box.wide { width: min(1080px, 96vw); }
+    .proto-frame { width: 100%; height: min(70vh, 620px); border: 0; display: block; background: #f7f8fa; }
+    .clickable { cursor: pointer; }
+    .clickable:hover { background: #f8fafb; }
+    .run-line { font-size: 11.5px; color: var(--muted); margin: -4px 0 12px; }
+    .empty { color: var(--muted); font-size: 12.5px; padding: 8px 0; }
+    .kb-input { max-width: 260px; }
+    .btn:disabled { opacity: .6; cursor: default; }
+    .step.current { box-shadow: 0 0 0 2px var(--brand-soft-2); }
+    @media (max-width: 760px) {
+      .intake-grid { grid-template-columns: 1fr; }
+      .kb-input { max-width: none; }
+    }
+  </style>
 </head>
 <body>
-<div class="banner">本页为「素材成曲」本地可行性验证工具：图片与参考音频仅本机解析、不上传；成品音频本地合成（示意级音色）；历史仅本机保存 200px 压缩缩略图；验证结论不作为线上功能交付。</div>
-
-<header class="top">
-  <div class="title-wrap"><h1>素材成曲 · 可行性验证</h1><span class="sub">一键成片 · AI 音乐 · 素材成曲</span></div>
-  <nav class="tabs">
-    <button class="active" data-tab="main">验证台</button>
-    <button data-tab="history">历史记录</button>
-    <button data-tab="test">规则自检</button>
-    <button data-tab="exp">批量实验</button>
-  </nav>
-</header>
-
-<main>
-  <!-- 页面 1 · 验证台主页面 -->
-  <section id="tab-main" class="panel active">
-    <div class="grid">
-      <div class="col">
-        <div class="card">
-          <h2>上传图片</h2>
-          <div class="dropzone" id="dropzone">
-            <img id="dzThumb" alt="" hidden>
-            <div id="dzText">点击上传 / 拖拽到此处<br><span class="hint">JPG / PNG / WebP，仅本机解析，不上传</span></div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-top">
+          <span class="logo">需</span>
+          <div>
+            <strong>需求协作台</strong>
           </div>
-          <input type="file" id="dzInput" accept="image/jpeg,image/png,image/webp" hidden>
         </div>
-        <div class="card" id="featCard" hidden>
-          <h2>画面解析</h2>
-          <div id="featPanel"></div>
+      </div>
+      <nav class="nav">
+        <div class="nav-group">总览</div>
+        <button class="active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          概览
+        </button>
+        <div class="nav-group">需求管理</div>
+        <button data-view="requirements">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+          需求列表
+        </button>
+        <button data-view="requirement">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+          需求详情
+        </button>
+        <div class="nav-group">交付与沉淀</div>
+        <button data-view="delivery">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          交付档案
+        </button>
+        <button data-view="knowledge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          知识库
+        </button>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <div class="mobile-nav">
+        <button class="active" data-view="dashboard">概览</button>
+        <button data-view="requirements">需求列表</button>
+        <button data-view="requirement">需求详情</button>
+        <button data-view="delivery">交付档案</button>
+        <button data-view="knowledge">知识库</button>
+      </div>
+
+      <header class="topbar">
+        <div class="crumb" id="crumb"><strong>需求协作台</strong> / 概览</div>
+        <input class="search" id="global-search" placeholder="按需求名称或客户筛选…">
+        <div class="top-right">
+          <span class="mode-badge" id="engine-badge">通道检测中…</span>
+          <div class="avatar">产</div>
         </div>
-        <div class="card">
-          <h2>参考音乐（可选）</h2>
-          <div class="dropzone dropzone-sm" id="refZone">
-            <div id="refText">点击上传参考 MP3 / WAV / M4A<br><span class="hint">仅提取节奏、调性、亮度与能量等抽象特征，不做旋律复制</span></div>
+      </header>
+
+      <div class="content">
+        <section class="view active" id="view-dashboard">
+          <div class="page-head">
+            <div>
+              <h1>需求总览</h1>
+              <p class="sub" id="dash-sub">正在读取需求数据…</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" onclick="startDemo()">跟随讲解</button>
+              <button class="btn primary" onclick="showView('requirements')">查看需求列表</button>
+            </div>
           </div>
-          <input type="file" id="refInput" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,.mp3,.wav,.m4a,.aac" hidden>
-          <div class="sample-row" id="refSamples"><span class="sample-label">参考示例：</span></div>
-          <audio id="refPlayer" controls preload="auto" hidden></audio>
-          <div class="btn-row"><button class="btn btn-ghost" id="refClear" hidden>移除参考音乐</button></div>
-        </div>
-        <div class="card" id="refCard" hidden>
-          <h2>参考解析</h2>
-          <div id="refPanel"></div>
-        </div>
-        <div class="card">
-          <h2>情绪提示词</h2>
-          <textarea id="promptInput" rows="2" placeholder="例：温暖、有科技感，适合产品发布片开头，不要人声"></textarea>
-          <div class="tag-row" id="tagRow"></div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card">
-          <h2>音乐方案</h2>
-          <div id="planCard"><div class="plan-empty">上传图片并输入提示词后，这里展示方案（风格 · BPM · 调式 · 编制 · 情绪曲线）</div></div>
-        </div>
-        <div class="card" id="enCard" hidden>
-          <h2>英文提示词（可复制）</h2>
-          <div class="en-prompt"><div class="en-label">Positive</div><div id="enPos"></div></div>
-          <div class="en-prompt"><div class="en-label">Negative</div><div id="enNeg"></div></div>
-          <button class="btn btn-ghost" id="btnCopy">整段复制</button>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="btnGen" disabled>开始生成</button>
-          <button class="btn" id="btnRetry" disabled>换一个</button>
-          <button class="btn" id="btnAdjust" disabled>调整提示词重新生成</button>
-        </div>
+
+          <div class="panel" id="intake-panel" style="margin-bottom:16px">
+            <div class="panel-head">
+              <h2>把客户材料交进来</h2>
+            </div>
+            <div class="panel-body">
+              <div class="intake-grid">
+                <label>需求名称
+                  <input id="intake-name" placeholder="例如：一键成片 · AI音乐（素材成曲）">
+                </label>
+                <label>客户
+                  <input id="intake-client" placeholder="例如：内容平台 · 一键成片">
+                </label>
+                <label>负责人
+                  <select id="intake-owner">
+                    <option>产品 A</option>
+                    <option>产品 B</option>
+                    <option>产品 C</option>
+                    <option>产品 D</option>
+                  </select>
+                </label>
+              </div>
+              <textarea id="intake-material" placeholder="把材料粘贴到这里：会议转写 / 录音摘要 / 需求说明 / 原型描述…"></textarea>
+              <div class="prototype-read">
+                <div class="prototype-read-head"><strong>读取 CoDesign 原型</strong></div>
+                <div class="prototype-read-fields">
+                  <label>原型分享链接<input id="prototype-url" type="url" placeholder="https://codesign.qq.com/app/s/…" autocomplete="url"></label>
+                  <label>访问密码<input id="prototype-password" type="password" placeholder="原型访问密码" autocomplete="off"></label>
+                  <button class="btn" id="prototype-read-btn" onclick="readPrototype()">立即读取</button>
+                </div>
+                <div class="prototype-read-result" id="prototype-read-result" aria-live="polite"></div>
+              </div>
+              <div class="upload-list" id="intake-files"></div>
+              <div class="intake-actions">
+                <button class="btn primary" id="run-btn" onclick="submitIntake()">交给智能体跑全流程</button>
+                <label class="btn upload-btn">上传材料
+                  <input type="file" id="intake-file" multiple hidden onchange="handleFiles(event, 'intake')">
+                </label>
+                <button class="btn" onclick="fillSample()">填入一条示例材料</button>
+              </div>
+              <div class="run-strip" id="run-strip"></div>
+            </div>
+          </div>
+
+          <div class="hero" id="hero">
+            <div class="hero-main">
+              <h2>把一条需求，跑成一次交付</h2>
+              <div class="hero-flow">
+                <span>需求接收</span><i>→</i><span>需求拆解</span><i>→</i><span>算法实验</span><i>→</i><span>技术方案</span><i>→</i><span>开发联调</span><i>→</i><span>验收交付</span>
+              </div>
+            </div>
+            <div class="hero-stats">
+              <div class="stat"><strong id="stat-total">0</strong><span>需求总数</span></div>
+              <div class="stat"><strong>6</strong><span>流程阶段</span></div>
+              <div class="stat"><strong id="stat-deliverables">0</strong><span>已产出交付物</span></div>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="label">需求总数</div>
+              <div class="value" id="m-total">0</div>
+              <div class="hint">全部需求</div>
+            </div>
+            <div class="metric">
+              <div class="label">进行中</div>
+              <div class="value" id="m-active">0</div>
+              <div class="hint">未走完全流程</div>
+            </div>
+            <div class="metric">
+              <div class="label">已完成</div>
+              <div class="value accent" id="m-done">0</div>
+              <div class="hint">六个阶段走完</div>
+            </div>
+            <div class="metric">
+              <div class="label">需关注</div>
+              <div class="value accent" id="m-risk">0</div>
+              <div class="hint">存在中高风险阶段</div>
+            </div>
+            <div class="metric">
+              <div class="label">知识库沉淀</div>
+              <div class="value" id="m-kb">0</div>
+              <div class="hint">可复用历史文档</div>
+            </div>
+            <div class="metric">
+              <div class="label">全流程阶段</div>
+              <div class="value" id="m-stages">6</div>
+              <div class="hint">接收 → 验收</div>
+            </div>
+          </div>
+
+          <div class="panel" id="full-process" style="margin-bottom:16px">
+            <div class="panel-head">
+              <h2>流程阶段</h2>
+            </div>
+            <div class="panel-body">
+              <p class="sub" style="margin-bottom:14px" id="pipeline-caption"></p>
+              <div class="pipeline" id="dashboard-pipeline"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel" id="stage-distribution">
+              <div class="panel-head">
+                <h2>需求阶段分布</h2>
+                <span class="badge gray">全部项目</span>
+              </div>
+              <div class="panel-body bar-chart" id="stage-bars"></div>
+            </div>
+
+            <div class="panel" id="risk-radar">
+              <div class="panel-head">
+                <h2>风险雷达</h2>
+                <span class="badge gray" id="risk-badge">统计中…</span>
+              </div>
+              <div class="panel-body risk-list" id="risk-list"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel" id="req-preview-panel">
+              <div class="panel-head">
+                <h2>需求列表</h2>
+                <button class="btn small" onclick="showView('requirements')">查看全部</button>
+              </div>
+              <div id="req-preview"></div>
+            </div>
+
+            <div class="panel" id="feed-panel">
+              <div class="panel-head">
+                <h2>最新动态</h2>
+              </div>
+              <div class="panel-body feed" id="feed-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-requirements">
+          <div class="page-head">
+            <div>
+              <h1>需求列表</h1>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" onclick="exportCSV()">导出清单</button>
+              <button class="btn primary" onclick="newRequirement()">新建需求</button>
+            </div>
+          </div>
+
+          <div class="chips">
+            <button class="chip active" onclick="selectChip(this, 'all')" id="req-total-chip">全部 0</button>
+            <button class="chip" onclick="selectChip(this, 'active')">进行中</button>
+            <button class="chip" onclick="selectChip(this, 'risk')">有风险</button>
+            <button class="chip" onclick="selectChip(this, 'done')">已完成</button>
+          </div>
+
+          <div class="panel" id="req-table-panel">
+            <div class="panel-head">
+              <h2>全部需求</h2>
+              <span class="badge brand" id="req-count">0 条</span>
+            </div>
+            <div class="panel-body">
+              <table class="table mobile-stack" id="req-table">
+                <thead>
+                  <tr><th>需求</th><th>客户</th><th>当前阶段</th><th>风险</th><th>负责人</th><th>更新时间</th></tr>
+                </thead>
+                <tbody id="req-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-requirement">
+          <div class="req-header">
+            <div>
+              <h1 class="req-title" id="req-title">需求详情</h1>
+              <div class="req-meta" id="req-meta"></div>
+            </div>
+            <div class="req-actions">
+              <button class="btn" onclick="openMaterialModal()">补充材料</button>
+              <button class="btn" onclick="openPrototype()">查看可运行原型</button>
+              <button class="btn primary" id="run-all-btn" onclick="runAllStages()">跑完全流程</button>
+            </div>
+          </div>
+
+          <div class="run-line" id="detail-status"></div>
+
+          <div class="stepper" id="stepper"></div>
+
+          <div class="detail-grid">
+            <div id="stage-content"></div>
+            <aside class="side-list" id="stage-aside"></aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-delivery">
+          <div class="page-head">
+            <div>
+              <h1>交付档案</h1>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <span class="badge green" id="delivery-done">已完成 0 阶段</span>
+              <span class="badge brand" id="delivery-running">进行中 0 阶段</span>
+              <button class="btn primary" onclick="exportCSV()">导出交付清单</button>
+            </div>
+          </div>
+
+          <div class="panel" id="delivery-table">
+            <div class="panel-head">
+              <h2>阶段交付清单</h2>
+            </div>
+            <div class="panel-body">
+              <table class="table mobile-stack" id="delivery-table-grid">
+                <thead>
+                  <tr><th>阶段</th><th>交付物</th><th>状态</th><th>负责角色</th><th>更新时间</th></tr>
+                </thead>
+                <tbody id="delivery-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:16px">
+            <div class="panel-head">
+              <h2>交付物清单</h2>
+            </div>
+            <div class="panel-body" style="display:flex;flex-wrap:wrap;gap:8px" id="delivery-tags"></div>
+          </div>
+
+          <div class="panel" id="role-split" style="margin-top:16px">
+            <div class="panel-head">
+              <h2>各阶段责任分工</h2>
+            </div>
+            <div class="panel-body">
+              <div class="dashboard-grid" style="margin-bottom:0">
+                <div class="risk-list">
+                  <div class="risk-item">
+                    <span class="dot brand"></span>
+                    <div>
+                      <strong>产品经理</strong>
+                      <span>需求接收、需求拆解、流程推进、材料补充与验收组织。</span>
+                    </div>
+                  </div>
+                  <div class="risk-item">
+                    <span class="dot amber"></span>
+                    <div>
+                      <strong>算法团队</strong>
+                      <span>按实验方案执行标注与实验，回填评估指标与结论。</span>
+                    </div>
+                  </div>
+                  <div class="risk-item">
+                    <span class="dot green"></span>
+                    <div>
+                      <strong>后端团队</strong>
+                      <span>技术方案定稿、接口与数据设计、服务实现。</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="risk-list">
+                  <div class="risk-item">
+                    <span class="dot brand"></span>
+                    <div>
+                      <strong>前端 / 测试</strong>
+                      <span>页面开发、联调、测试用例与上线前验证。</span>
+                    </div>
+                  </div>
+                  <div class="risk-item">
+                    <span class="dot amber"></span>
+                    <div>
+                      <strong>项目组</strong>
+                      <span>排期、客户沟通、验收交付与长期维护。</span>
+                    </div>
+                  </div>
+                  <div class="risk-item">
+                    <span class="dot green"></span>
+                    <div>
+                      <strong>知识库</strong>
+                      <span>沉淀拆解文档、实验方案与复盘问题，供后续需求复用。</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-knowledge">
+          <div class="page-head">
+            <div>
+              <h1>知识库</h1>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <span class="badge" id="kb-channel">知识通道：本机</span>
+              <span class="badge brand" id="kb-count">已沉淀 0 份</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>检索与匹配</h2>
+              <div style="display:flex;gap:8px">
+                <input class="kb-input" id="kb-query" placeholder="输入需求关键词，匹配历史文档">
+                <button class="btn" onclick="searchKnowledge()">检索</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <table class="table mobile-stack" id="knowledge-table">
+                <thead>
+                  <tr><th>历史需求</th><th>相似度</th><th>可复用内容</th><th>更新时间</th><th>操作</th></tr>
+                </thead>
+                <tbody id="knowledge-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
+  </div>
 
-    <!-- 页面 2 · 生成结果：播放条 -->
-    <div class="card player" id="playerBar" hidden>
-      <h2>试听</h2>
-      <div class="player-row">
-        <audio id="player" controls preload="auto"></audio>
-        <canvas id="wave" width="560" height="64"></canvas>
-        <div class="time"><span id="curTime">00:00</span> / <b id="durText">00:15</b></div>
+  <div class="modal" id="material-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>补充客户材料</h2>
+        <button class="btn ghost" onclick="closeMaterialModal()">关闭</button>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btnMp3" disabled>下载 MP3</button>
-        <button class="btn" id="btnWav" disabled>下载 WAV</button>
-        <span class="mp3-state" id="mp3State">MP3 服务探测中…</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- 页面 3 · 历史记录 -->
-  <section id="tab-history" class="panel">
-    <div class="card">
-      <h2>历史记录（本机保存最近 20 条，不上传）</h2>
-      <div id="histList"></div>
-    </div>
-  </section>
-
-  <!-- 规则自检 -->
-  <section id="tab-test" class="panel">
-    <div class="card">
-      <h2>规则自检</h2>
-      <p class="hint-p">页面加载时自动执行，覆盖基础链路 B 系列与规则边界 S 系列。</p>
-      <div id="testSummary" class="test-summary"></div>
-      <table class="test-table">
-        <thead><tr><th>编号</th><th>用例</th><th>结论</th><th>实测</th></tr></thead>
-        <tbody id="testBody"></tbody>
-      </table>
-      <button class="btn" id="btnTest">重新运行自检</button>
-    </div>
-  </section>
-
-  <!-- 批量实验（验证专用，不进正式交互） -->
-  <section id="tab-exp" class="panel">
-    <div class="card">
-      <h2>批量实验（验证专用）</h2>
-      <p class="hint-p">用于 E-1b 对照矩阵：选择多张图片 + 每行一个提示词，逐组生成方案并以每组首词为基线做六要素 diff。判据冻结：变化 ≥3 项 且（BPM 差 ≥8 或调式切换），不可放宽。</p>
-      <div class="exp-form">
-        <label>图片（可多选，≤24 张，仅本机解析）
-          <input type="file" id="expFiles" accept="image/jpeg,image/png,image/webp" multiple>
+      <div class="modal-body">
+        <label class="upload-zone upload-btn">把新收到的原型说明、录音摘要或转写文本贴上进来，也可以直接选文件
+          <input type="file" id="material-file" multiple hidden onchange="handleFiles(event, 'material')">
         </label>
-        <label>提示词清单（每行一个，≤8 条）
-          <textarea id="expWords" rows="4">温暖治愈，适合产品发布片开头，不要人声
-大气恢弘，宣传片氛围，不要人声
-忧郁深沉，雨天画面，不要太吵
-轻快活力，适合 vlog 片头，不要太吵</textarea>
-        </label>
+        <textarea id="material-text" placeholder="例如：客户追加要求，会议纪要需要支持中英文混合内容，并在待办中保留负责人和截止时间。"></textarea>
+        <div class="upload-list" id="material-files"></div>
+        <div class="impact-box" id="impact-box"></div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="expRun">运行批量实验</button>
-        <button class="btn" id="expCsv">导出 CSV</button>
-        <span id="expProg" class="mp3-state"></span>
+      <div class="modal-foot">
+        <button class="btn" onclick="analyzeImpact()">分析影响</button>
+        <button class="btn primary" onclick="addMaterial()">并入需求并沉淀</button>
       </div>
-      <table class="test-table">
-        <thead><tr><th>图</th><th>提示词</th><th>风格</th><th>BPM</th><th>调式</th><th>变化</th><th>BPM差</th><th>调式切换</th><th>判定</th></tr></thead>
-        <tbody id="expBody"></tbody>
-      </table>
     </div>
-  </section>
-</main>
+  </div>
 
-<div id="toast"></div>
-<script src="app.js"></script>
+  <div class="modal" id="output-modal">
+    <div class="modal-box wide">
+      <div class="modal-head">
+        <h2 id="output-title">可运行原型</h2>
+        <div style="display:flex;gap:8px">
+          <a class="btn" id="output-open" href="#" target="_blank" rel="noopener">在新窗口打开</a>
+          <button class="btn ghost" onclick="closeOutputModal()">关闭</button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0">
+        <iframe class="proto-frame" id="output-frame" title="可运行原型" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-guide" id="demo-guide">
+    <div class="g-head">
+      <span class="g-step" id="guide-step">第 1 / 10 步</span>
+      <button class="btn ghost" style="color:#9aa1ac;border:0" onclick="endDemo()">退出</button>
+    </div>
+    <h3 id="guide-title"></h3>
+    <p id="guide-desc"></p>
+    <div class="g-actions">
+      <button class="btn" onclick="prevDemoStep()">上一步</button>
+      <button class="btn primary" id="guide-next" onclick="nextDemoStep()">下一步</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  /* =========================================================
+     需求协作台 · 页面逻辑
+     所有数据来自本机桥接服务：六阶段真实执行、产物落盘、知识库真读真写。
+     ========================================================= */
+
+  var ORIGIN = /^https?:$/i.test(location.protocol) ? '' : 'http://127.0.0.1:8788';
+  var STAGE_KEYS = ['intake', 'breakdown', 'algorithm', 'tech', 'build', 'delivery'];
+  var STAGE_META = [
+    { key: 'intake', name: '需求接收', role: '产品经理主责', brief: '材料清单 · 缺口清单' },
+    { key: 'breakdown', name: '需求拆解', role: '产品经理主责', brief: '需求拆解文档' },
+    { key: 'algorithm', name: '算法实验', role: '产品经理 + 算法团队', brief: '实验方案 · 评估指标' },
+    { key: 'tech', name: '技术方案', role: '产品经理 + 后端团队', brief: '技术约束 · 接口边界' },
+    { key: 'build', name: '开发联调', role: '研发团队主责', brief: '开发任务 · 可运行原型' },
+    { key: 'delivery', name: '验收交付', role: '项目组主责', brief: '验收清单 · 交付物' }
+  ];
+
+  var state = {
+    engine: null,
+    ima: null,
+    requirements: [],
+    detail: null,
+    kbDocs: [],
+    kbHits: null,
+    kbQuery: '',
+    stageIndex: 0,
+    filter: 'all',
+    searchText: '',
+    running: false,
+    busyKey: null
+    ,prototypeRead: null
+  };
+
+  /* ---------- 工具 ---------- */
+
+  function $(id) { return document.getElementById(id); }
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function api(path, method, body) {
+    return fetch(ORIGIN + path, {
+      method: method || 'GET',
+      headers: body ? { 'content-type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var data;
+        try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+        if (!res.ok) throw new Error((data && data.error) || ('请求失败 ' + res.status));
+        return data;
+      });
+    });
+  }
+
+  function readPrototype(propagateError) {
+    if (state.running) { toast('当前流程正在执行，请稍候'); return; }
+    var url = ($('prototype-url').value || '').trim();
+    var password = $('prototype-password').value || '';
+    if (!url) { toast('先粘贴 CoDesign 原型链接'); $('prototype-url').focus(); return; }
+    var btn = $('prototype-read-btn');
+    var box = $('prototype-read-result');
+    state.prototypeRead = null;
+    btn.disabled = true;
+    btn.textContent = '正在读取原型…';
+    box.classList.add('show');
+    box.textContent = '正在打开分享链接、读取画板并交给 WorkBuddy 分析；耗时取决于画板数量。';
+    return api('/api/prototype/read', 'POST', { url: url, password: password })
+      .then(function (r) {
+        state.prototypeRead = r;
+        $('prototype-password').value = '';
+        var pageNames = (r.pages || []).map(function (p) { return '· ' + p.name; }).join('\n');
+        var block = [
+          '【CoDesign 原型读取结果】',
+          '原型：' + (r.title || 'CoDesign 原型'),
+          '画板：' + (r.pages || []).length + ' 个',
+          pageNames,
+          '视觉完整性审查：' + (r.reviewStatus || 'unverified'),
+          '',
+          r.analysis || '',
+          '',
+          '分析报告：' + (location.origin + r.analysisHref)
+        ].filter(Boolean).join('\n');
+        var material = $('intake-material');
+        material.value = (material.value ? material.value.replace(/\s+$/, '') + '\n\n' : '') + block;
+        var links = (r.pages || []).map(function (p) { return '<a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.name) + ' PNG</a>'; }).join(' · ');
+        box.innerHTML = '<b>已读取 ' + (r.pages || []).length + ' 个画板</b> · 视觉审查：' + esc(r.reviewStatus || 'unverified') + '<br>' + links + '<br><a href="' + esc(r.analysisHref) + '" target="_blank" rel="noopener">打开完整分析报告</a>';
+        toast('原型读取与分析完成，结果已并入需求材料');
+      })
+      .catch(function (err) {
+        box.textContent = '读取或分析失败：' + err.message;
+        toast('原型读取失败：' + err.message);
+        if (propagateError) throw err;
+        return null;
+      })
+      .finally(function () {
+        $('prototype-password').value = '';
+        btn.disabled = false;
+        btn.textContent = '立即读取';
+      });
+  }
+
+  function statusTone(status) {
+    if (status === '已完成') return 'green';
+    if (status === '进行中') return 'brand';
+    return 'gray';
+  }
+
+  function riskColor(level) {
+    if (level === 'high') return '#b74c3c';
+    if (level === 'medium') return '#b7791f';
+    return '#527575';
+  }
+
+  function engineLabel(engine) {
+    if (engine === 'workbuddy') return 'WorkBuddy 智能体';
+    if (engine === 'local-deterministic') return '内置流程引擎';
+    return engine || '—';
+  }
+
+  function fmtTime(value) {
+    if (!value) return '—';
+    return String(value).replace('T', ' ').slice(0, 16);
+  }
+
+  function shortDate(value) {
+    var s = String(value || '');
+    var m = s.match(/\d{4}-(\d{2}-\d{2})/);
+    return m ? m[1] : '—';
+  }
+
+  function toast(message) {
+    var node = $('toast');
+    node.textContent = message;
+    node.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { node.classList.remove('show'); }, 2600);
+  }
+  function showToast(message) { toast(message); }
+
+  /* ---------- 视图 ---------- */
+
+  var VIEW_LABELS = {
+    dashboard: '概览',
+    requirements: '需求列表',
+    requirement: '需求详情',
+    delivery: '交付档案',
+    knowledge: '知识库'
+  };
+
+  function showView(view) {
+    document.querySelectorAll('.view').forEach(function (node) { node.classList.remove('active'); });
+    var target = $('view-' + view);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.nav button, .mobile-nav button').forEach(function (node) {
+      node.classList.toggle('active', node.dataset.view === view);
+    });
+    var crumb = $('crumb');
+    if (crumb) crumb.innerHTML = '<strong>需求协作台</strong> / ' + (VIEW_LABELS[view] || '概览');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ---------- 数据读取 ---------- */
+
+  function refreshRequirements() {
+    return api('/api/requirements').then(function (r) {
+      state.requirements = r.requirements || [];
+    });
+  }
+
+  function openRequirement(id) {
+    return api('/api/requirements/' + id).then(function (r) {
+      state.detail = r.requirement;
+      var idx = state.detail.stages.findIndex(function (s) { return s.status !== '已完成'; });
+      state.stageIndex = idx < 0 ? 0 : idx;
+      renderRequirementView();
+      renderPipeline();
+      loadKnowledge(state.detail.name);
+      return state.detail;
+    });
+  }
+
+  function openRequirementById(id) {
+    openRequirement(id).then(function () {
+      showView('requirement');
+    }).catch(function (err) { toast('打开失败：' + err.message); });
+  }
+
+  function loadKnowledge(query) {
+    var path = query ? ('/api/knowledge?q=' + encodeURIComponent(query)) : '/api/knowledge';
+    return api(path).then(function (r) {
+      state.ima = r.ima || state.ima;
+      if (typeof r.query === 'string') {
+        state.kbHits = r.hits || [];
+        state.kbQuery = r.query;
+      } else {
+        state.kbDocs = r.docs || [];
+      }
+      renderKnowledge();
+    }).catch(function () { /* 知识库不可用时保持页面可用 */ });
+  }
+
+  /* ---------- 渲染：概览 ---------- */
+
+  function toView(r) {
+    var stages = r.stages || [];
+    var done = r.progress || 0;
+    var idx = typeof r.stageIndex === 'number' ? r.stageIndex : done;
+    var current = done >= 6 ? null : (stages[idx] || null);
+    var riskStage = null;
+    for (var i = 0; i < stages.length; i += 1) {
+      if (stages[i].status === '进行中' && stages[i].riskLevel && stages[i].riskLevel !== 'low') { riskStage = stages[i]; break; }
+    }
+    for (var j = 0; j < stages.length && !riskStage; j += 1) {
+      if (stages[j].status !== '已完成' && stages[j].riskLevel === 'high') { riskStage = stages[j]; }
+    }
+    return {
+      id: r.id,
+      name: r.name,
+      client: r.client || '内部',
+      owner: r.owner || '产品 A',
+      updated: r.updated || '',
+      progress: done,
+      stage: current ? current.name : '已完成',
+      stageTone: done >= 6 ? 'green' : (current && current.status === '进行中' ? 'brand' : 'gray'),
+      risk: riskStage ? '需关注' : '正常',
+      riskTone: riskStage ? (riskStage.riskLevel === 'high' ? 'red' : 'amber') : 'green',
+      hasRisk: Boolean(riskStage)
+    };
+  }
+
+  function renderDashboard() {
+    var list = state.requirements.map(toView);
+    var active = list.filter(function (r) { return r.progress < 6; }).length;
+    var done = list.filter(function (r) { return r.progress >= 6; }).length;
+    var risky = list.filter(function (r) { return r.hasRisk; }).length;
+    var deliverables = state.requirements.reduce(function (sum, r) {
+      return sum + (r.stages || []).filter(function (s) { return s.status === '已完成'; }).length;
+    }, 0);
+    var latest = state.requirements.map(function (r) { return r.updated; }).sort().pop();
+
+    $('dash-sub').textContent = '共 ' + list.length + ' 条需求' + (latest ? ' · 最近更新 ' + latest : '');
+    $('stat-total').textContent = list.length;
+    $('stat-deliverables').textContent = deliverables;
+    $('m-total').textContent = list.length;
+    $('m-active').textContent = active;
+    $('m-done').textContent = done;
+    $('m-risk').textContent = risky;
+    $('m-kb').textContent = state.kbDocs.length;
+    $('m-stages').textContent = 6;
+
+    renderPipeline();
+    renderStageBars();
+    renderRiskRadar();
+    renderFeed();
+    renderPreview();
+    renderRunStrip();
+    $('req-total-chip').textContent = '全部 ' + list.length;
+  }
+
+  function renderPipeline() {
+    var list = (state.detail && state.detail.stages.length)
+      ? state.detail.stages
+      : STAGE_META.map(function (m) {
+          return { name: m.name, role: m.role, brief: m.brief, status: '未开始', riskLevel: 'low' };
+        });
+    $('dashboard-pipeline').innerHTML = list.map(function (s, i) {
+      var cls = s.status === '已完成' ? 'done'
+        : s.status === '进行中' ? 'active'
+        : (s.riskLevel && s.riskLevel !== 'low' ? 'risk' : '');
+      return '<div class="stage-card ' + cls + '">' +
+        '<div class="stage-num">' + (i + 1) + '</div>' +
+        '<div class="stage-name">' + esc(s.name) + '</div>' +
+        '<div class="stage-state">' + esc(s.status || '未开始') + '</div>' +
+        '<div class="stage-brief">' + esc(s.brief || '') + '</div>' +
+        '<div class="stage-role">' + esc(s.role || '') + '</div>' +
+        (s.status === '进行中' && s.riskLevel && s.riskLevel !== 'low' ? '<div class="stage-risk">有风险</div>' : '') +
+        '</div>';
+    }).join('');
+    var caption = $('pipeline-caption');
+    if (caption) {
+      caption.textContent = state.detail
+        ? '当前展示：「' + state.detail.name + '」'
+        : '';
+    }
+  }
+
+  function renderStageBars() {
+    var counts = STAGE_META.map(function (m, i) {
+      return { name: m.name, count: state.requirements.filter(function (r) { return (r.progress || 0) === i; }).length };
+    });
+    counts.push({ name: '已完成', count: state.requirements.filter(function (r) { return (r.progress || 0) >= 6; }).length });
+    var max = Math.max.apply(null, counts.map(function (c) { return c.count; }).concat([1]));
+    $('stage-bars').innerHTML = counts.map(function (c, i) {
+      return '<div class="bar-row"><span>' + c.name + '</span>' +
+        '<div class="bar-track"><div class="bar-fill' + (i === 0 ? ' hot' : '') + '" style="width:' + Math.round((c.count / max) * 100) + '%"></div></div>' +
+        '<strong>' + c.count + '</strong></div>';
+    }).join('');
+  }
+
+  function renderRiskRadar() {
+    var items = [];
+    state.requirements.forEach(function (r) {
+      (r.stages || []).forEach(function (s) {
+        if (s.status === '进行中' && s.riskLevel && s.riskLevel !== 'low') {
+          items.push({ tone: s.riskLevel === 'high' ? 'red' : 'amber', title: r.name + ' · ' + s.name, note: s.risk || '需要人工确认' });
+        }
+      });
+    });
+    var seen = {};
+    items = items.filter(function (i) {
+      if (seen[i.title]) return false;
+      seen[i.title] = 1;
+      return true;
+    }).slice(0, 4);
+
+    $('risk-list').innerHTML = items.map(function (i) {
+      return '<div class="risk-item"><span class="dot ' + i.tone + '"></span><div><strong>' + esc(i.title) + '</strong><span>' + esc(i.note) + '</span></div></div>';
+    }).join('') || '<div class="empty">当前没有需要关注的风险项。</div>';
+
+    var badge = $('risk-badge');
+    badge.textContent = items.length ? items.length + ' 项需关注' : '暂无风险';
+    badge.className = 'badge ' + (items.length ? 'red' : 'gray');
+  }
+
+  function renderFeed() {
+    var list = state.requirements.slice().sort(function (a, b) {
+      return String(b.updated || '').localeCompare(String(a.updated || ''));
+    });
+    var rows = list.slice(0, 4).map(function (r) {
+      var v = toView(r);
+      var stage = v.progress >= 6 ? '验收交付' : v.stage;
+      return '<div class="feed-item"><time>' + esc(shortDate(r.updated)) + '</time>' +
+        '<span class="feed-tag ' + feedTone(stage) + '">' + esc(stage) + '</span>' +
+        '<div><b>' + esc(r.name) + '</b>' + (r.owner ? ' · ' + esc(r.owner) : '') + (v.progress >= 6 ? ' · 已完成' : '') + '</div></div>';
+    });
+    state.kbDocs.slice(0, 2).forEach(function (d) {
+      var stage = feedStageOfDoc(d);
+      var title = d.title;
+      var parts = String(title).split('·');
+      if (parts.length > 1) {
+        var tail = parts[parts.length - 1].trim();
+        if (stage && tail && tail.indexOf(stage) === 0) title = parts.slice(0, -1).join('·').trim();
+      }
+      rows.push('<div class="feed-item"><time>' + esc(shortDate(d.mtime)) + '</time>' +
+        '<span class="feed-tag ' + feedTone(stage) + '">' + esc(stage) + '</span>' +
+        '<div>知识库更新：<b>' + esc(title) + '</b></div></div>');
+    });
+    $('feed-list').innerHTML = rows.join('') || '<div class="empty">暂无动态，先把一条客户材料交进来跑一遍。</div>';
+  }
+
+  var FEED_STAGES = ['需求接收', '需求拆解', '算法实验', '技术方案', '开发联调', '验收交付'];
+
+  function feedTone(stage) {
+    if (stage === '验收交付' || stage === '已完成') return 'green';
+    if (stage === '算法实验' || stage === '技术方案') return 'amber';
+    if (stage === '需求接收' || stage === '需求拆解' || stage === '开发联调') return 'brand';
+    return 'gray';
+  }
+
+  function feedStageOfDoc(d) {
+    var tags = d.tags || [];
+    for (var i = 0; i < tags.length; i += 1) {
+      if (FEED_STAGES.indexOf(tags[i]) >= 0) return tags[i];
+    }
+    var parts = String(d.title || '').split('·');
+    var tail = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+    if (tail) return tail;
+    return '知识库';
+  }
+
+  function renderPreview() {
+    var list = state.requirements.slice(0, 4);
+    $('req-preview').innerHTML = list.map(function (r) {
+      var v = toView(r);
+      return '<div class="req-row clickable" onclick="openRequirementById(\'' + v.id + '\')">' +
+        '<div><div class="title">' + esc(v.name) + '</div><div class="meta">' + esc(v.client) + ' · 更新于 ' + esc(v.updated || '—') + '</div></div>' +
+        '<div><span class="badge ' + v.stageTone + '">' + esc(v.stage) + '</span></div>' +
+        '<div><span class="badge ' + v.riskTone + '">' + esc(v.risk) + '</span></div>' +
+        '<div class="hide-mobile">' + esc(v.owner) + '</div>' +
+        '</div>';
+    }).join('') || '<div class="empty">还没有需求记录。</div>';
+  }
+
+  /* ---------- 渲染：需求列表 ---------- */
+
+  function matchesFilter(v) {
+    if (state.searchText) {
+      var q = state.searchText.toLowerCase();
+      if (String(v.name).toLowerCase().indexOf(q) < 0 && String(v.client).toLowerCase().indexOf(q) < 0) return false;
+    }
+    if (state.filter === 'active') return v.progress > 0 && v.progress < 6;
+    if (state.filter === 'risk') return v.hasRisk;
+    if (state.filter === 'done') return v.progress >= 6;
+    return true;
+  }
+
+  function renderRequirements() {
+    var list = state.requirements.map(toView).filter(matchesFilter);
+    $('req-table-body').innerHTML = list.map(function (v) {
+      return '<tr class="clickable" onclick="openRequirementById(\'' + v.id + '\')">' +
+        '<td>' + esc(v.name) + '</td>' +
+        '<td>' + esc(v.client) + '</td>' +
+        '<td><span class="badge ' + v.stageTone + '">' + esc(v.stage) + '</span></td>' +
+        '<td><span class="badge ' + v.riskTone + '">' + esc(v.risk) + '</span></td>' +
+        '<td>' + esc(v.owner) + '</td>' +
+        '<td>' + esc(v.updated || '—') + '</td>' +
+        '</tr>';
+    }).join('') || '<tr><td colspan="6"><div class="empty">没有符合条件的需求。</div></td></tr>';
+    $('req-count').textContent = list.length + ' 条';
+    prepareStackedTables($('req-table'));
+  }
+
+  function selectChip(chip, key) {
+    state.filter = key;
+    document.querySelectorAll('.chip').forEach(function (node) { node.classList.toggle('active', node === chip); });
+    renderRequirements();
+  }
+
+  /* ---------- 渲染：需求详情 ---------- */
+
+  function renderRequirementView() {
+    var d = state.detail;
+    if (!d) return;
+    var done = d.stages.filter(function (s) { return s.status === '已完成'; }).length;
+    var risky = d.stages.filter(function (s) { return s.status !== '已完成' && s.riskLevel && s.riskLevel !== 'low'; });
+    var currentName = done >= 6 ? '已完成' : (d.stages[d.stageIndex] ? d.stages[d.stageIndex].name : '未开始');
+
+    $('req-title').textContent = d.name;
+    $('req-meta').innerHTML =
+      '<span class="badge ' + (done >= 6 ? 'green' : 'brand') + '">' + esc(currentName) + '</span>' +
+      '<span class="badge ' + (done >= 6 ? 'green' : 'gray') + '">' + done + ' / 6 阶段已完成</span>' +
+      (risky.length ? '<span class="badge amber">' + risky.length + ' 项需关注</span>' : '<span class="badge green">暂无待关注风险</span>') +
+      '<span>客户：' + esc(d.client || '内部') + '</span>' +
+      '<span>负责人：' + esc(d.owner || '产品 A') + '</span>' +
+      '<span>iMa 归档：' + esc(d.imaFolderName || '待生成') + (d.imaFolderStatus === '已找到' ? '（已关联）' : '（需先在项目文档中创建）') + '</span>' +
+      '<span>最近更新：' + esc(d.updated || '—') + '</span>';
+
+    renderStepper();
+    renderStage(state.stageIndex);
+    renderDelivery();
+    renderDetailStatus();
+  }
+
+  function renderStepper() {
+    var list = state.detail ? state.detail.stages : [];
+    $('stepper').innerHTML = list.map(function (s, i) {
+      var cls = s.status === '已完成' ? 'done' : s.status === '进行中' ? 'active' : (s.riskLevel && s.riskLevel !== 'low' ? 'risk' : '');
+      return '<button class="step ' + cls + (i === state.stageIndex ? ' current' : '') + '" onclick="selectStage(' + i + ')">' +
+        '<div class="s-top"><span class="s-name">' + esc(s.name) + '</span><span class="s-dot"></span></div>' +
+        '<div class="s-status">' + (state.busyKey === s.key ? '执行中…' : esc(s.status)) + '</div>' +
+        '</button>';
+    }).join('');
+  }
+
+  function selectStage(index) {
+    state.stageIndex = index;
+    renderStepper();
+    renderStage(index);
+  }
+
+  function sideItem(label, value, raw) {
+    return '<div class="side-item"><div class="label">' + esc(label) + '</div><div class="value">' + (raw ? value : esc(value || '—')) + '</div></div>';
+  }
+
+  // 知识沉淀策略：飞书放全量交付物，iMa 只放可复用的那部分。
+  function sinkBlock(s) {
+    var p = s.sinkPolicy || {};
+    if (!p.label) return '';
+    var tone = p.sink ? 'green' : 'gray';
+    var detail;
+    if (!p.sink) {
+      detail = esc(p.reason || '本阶段产物不进知识库');
+    } else if (s.knowledgeSink) {
+      var pushed = s.imaPush && s.imaPush.ok;
+      var landed = s.imaPush && s.imaPush.folderFallback ? '（已同步 iMa · 项目文档根目录）' : '（已同步 iMa）';
+      detail = '已沉淀：' + esc(s.knowledgeSink) +
+        (pushed ? landed : '（本地知识库，iMa 未同步）');
+    } else {
+      detail = '只沉淀可复用部分：' + esc(p.reason || '');
+    }
+    return sideItem('知识沉淀', '<span class="badge ' + tone + '">' + esc(p.label) + '</span><div class="artifact-hint">' + detail + '</div>', true);
+  }
+
+  // 本阶段交付物的查看 / 下载 / 跳转入口：文档、飞书在线文档、可运行原型、Demo 工程。
+  function stageArtifacts(s) {
+    var doc = s.deliverableDoc;
+    var rows = [];
+    if (doc && doc.href) {
+      rows.push('<a class="btn small" href="' + doc.href + '" target="_blank" rel="noopener">查看交付物</a>');
+      rows.push('<a class="btn small" href="' + doc.href + '" download>下载文档</a>');
+      if (s.docUrl) {
+        rows.push('<a class="btn small primary" href="' + s.docUrl + '" target="_blank" rel="noopener">打开飞书文档</a>');
+      } else {
+        rows.push('<span class="artifact-hint">飞书同步：' + esc((s.feishu && s.feishu.reason) || '未配置飞书凭证') + '</span>');
+      }
+    }
+    if (s.prototype && s.prototypeHref) {
+      rows.push('<button class="btn small" onclick="openPrototype()">浏览器查看原型</button>');
+      rows.push('<a class="btn small" href="' + s.prototypeHref + '" target="_blank" rel="noopener">新标签打开原型</a>');
+    }
+    if (s.demoHref) {
+      rows.push('<button class="btn small primary" onclick="openRunFolder(\'' + s.demoHref + '\')">打开 Demo 工程目录</button>');
+      if (s.demoEntry) rows.push('<a class="btn small" href="' + s.demoEntry + '" target="_blank" rel="noopener">运行 Demo</a>');
+    }
+    if (!rows.length) return '';
+    return '<div class="doc-block artifact-block"><h3>本阶段交付物</h3><div class="artifact-row">' + rows.join('') + '</div></div>';
+  }
+
+  function renderStage(index) {
+    var list = state.detail ? state.detail.stages : [];
+    var s = list[index];
+    if (!s) {
+      $('stage-content').innerHTML = '<div class="panel"><div class="panel-body"><p class="sub">请先从需求列表里选择一条需求。</p></div></div>';
+      $('stage-aside').innerHTML = '';
+      return;
+    }
+    var busy = state.busyKey === s.key;
+    $('stage-content').innerHTML =
+      '<div class="panel">' +
+        '<div class="panel-head">' +
+          '<h2>' + esc(s.name) + '</h2>' +
+          '<span class="badge ' + statusTone(s.status) + '">' + (busy ? '执行中…' : esc(s.status)) + '</span>' +
+        '</div>' +
+        '<div class="panel-body">' +
+          (busy ? '<div class="running-note">正在执行本阶段<strong class="run-clock" id="run-clock"></strong></div>' : '') +
+          (s.html || '<p class="sub">本阶段还没有产出，点右侧「执行本阶段」开始。</p>') +
+          stageArtifacts(s) +
+        '</div>' +
+      '</div>';
+
+    var skills = (s.skills || []).slice(0, 3).map(function (k) { return '<span class="tag">' + esc(k) + '</span>'; }).join('');
+    $('stage-aside').innerHTML =
+      sideItem('本阶段交付物', s.deliverable) +
+      sideItem('执行智能体', esc(s.agent || '待指派') + (skills ? '<div class="tags-inline">' + skills + '</div>' : ''), true) +
+      sideItem('责任角色', s.role) +
+      sideItem('负责人', s.owner) +
+      sideItem('风险', '<span style="color:' + riskColor(s.riskLevel) + '">' + esc(s.risk || '—') + '</span>', true) +
+      sideItem('容易忽略的点', s.blindSpot) +
+      sideItem('下一步', s.next) +
+      sinkBlock(s) +
+      '<button class="btn" style="width:100%;margin-top:8px" onclick="runStageByKey(\'' + s.key + '\')">执行本阶段</button>' +
+      (s.engine ? '<div class="engine-note">产出方式：' + esc(engineLabel(s.engine)) + (s.generatedAt ? ' · ' + esc(fmtTime(s.generatedAt)) : '') + '</div>' : '');
+    prepareStackedTables($('stage-content'));
+  }
+
+  function renderDetailStatus() {
+    var node = $('detail-status');
+    if (!node) return;
+    if (state.running && state.busyKey) {
+      var idx = STAGE_KEYS.indexOf(state.busyKey);
+      node.textContent = '正在执行第 ' + (idx + 1) + ' / 6 阶段：' + (STAGE_META[idx] ? STAGE_META[idx].name : state.busyKey) + '…';
+    } else if (state.detail) {
+      var done = state.detail.stages.filter(function (s) { return s.status === '已完成'; }).length;
+      node.textContent = done >= 6 ? '' : '已完成 ' + done + ' / 6 阶段';
+    } else {
+      node.textContent = '';
+    }
+  }
+
+  function renderDelivery() {
+    var d = state.detail;
+    if (!d) return;
+    var done = d.stages.filter(function (s) { return s.status === '已完成'; }).length;
+    var running = d.stages.filter(function (s) { return s.status === '进行中'; }).length;
+    $('delivery-done').textContent = '已完成 ' + done + ' 阶段';
+    $('delivery-running').textContent = '进行中 ' + running + ' 阶段';
+    $('delivery-tags').innerHTML = d.stages.map(function (s) {
+      var tone = s.status === '已完成' ? 'green' : s.status === '进行中' ? 'brand' : '';
+      return '<span class="tag ' + tone + '">' + esc(s.name) + ' · ' + esc(s.deliverable || '') + '</span>';
+    }).join('');
+    $('delivery-body').innerHTML = d.stages.map(function (s) {
+      return '<tr>' +
+        '<td>' + esc(s.name) + '</td>' +
+        '<td>' + esc(s.deliverable || '—') + '</td>' +
+        '<td><span class="badge ' + statusTone(s.status) + '">' + esc(s.status) + '</span></td>' +
+        '<td>' + esc(s.role || '—') + '</td>' +
+        '<td>' + esc(fmtTime(s.generatedAt)) + '</td>' +
+        '</tr>';
+    }).join('');
+    prepareStackedTables($('delivery-table-grid'));
+  }
+
+  /* ---------- 渲染：知识库 ---------- */
+
+  function kbActions(item) {
+    var id = item.id || '';
+    var use = '<button class="btn small" onclick="useKnowledge(\'' + esc(id) + '\')">引用到当前需求</button>';
+    if (item.source === 'ima') {
+      return '<div class="kb-actions">' + use + '</div>';
+    }
+    var url = '/data/knowledge/' + encodeURIComponent(id) + '.md';
+    return '<div class="kb-actions">' +
+      '<a class="btn small" href="' + url + '" target="_blank" rel="noopener">查看</a>' +
+      '<a class="btn small" href="' + url + '" download>下载</a>' +
+      use +
+      '</div>';
+  }
+
+  function renderKnowledge() {
+    if (!$('knowledge-body')) return;
+    var rows;
+    if (state.kbHits && state.kbHits.length) {
+      rows = state.kbHits.map(function (h) {
+        var pct = Math.round((h.score || 0) * 100);
+        var tone = pct >= 60 ? 'green' : pct >= 30 ? 'amber' : 'gray';
+        return '<tr>' +
+          '<td>' + esc(h.title) + (h.source === 'ima' ? ' <span class="badge brand">iMa</span>' : '') + '</td>' +
+          '<td><span class="badge ' + tone + '">' + pct + '%</span></td>' +
+          '<td>' + esc(h.summary || (h.tags || []).join('、') || '字段定义与验收标准') + '</td>' +
+          '<td>' + esc(shortDate(h.mtime)) + '</td>' +
+          '<td>' + kbActions(h) + '</td>' +
+          '</tr>';
+      }).join('');
+    } else if (state.kbHits) {
+      rows = '<tr><td colspan="5"><div class="empty">没有匹配到历史文档。</div></td></tr>';
+    } else {
+      rows = state.kbDocs.map(function (d) {
+        return '<tr>' +
+          '<td>' + esc(d.title) + '</td>' +
+          '<td><span class="badge gray">—</span></td>' +
+          '<td>' + esc(d.summary || (d.tags || []).join('、') || '—') + '</td>' +
+          '<td>' + esc(shortDate(d.mtime)) + '</td>' +
+          '<td>' + kbActions(d) + '</td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="5"><div class="empty">知识库还没有文档。</div></td></tr>';
+    }
+    $('knowledge-body').innerHTML = rows;
+    $('kb-count').textContent = '已沉淀 ' + state.kbDocs.length + ' 份';
+    $('kb-query').value = state.kbQuery || '';
+    var ch = $('kb-channel');
+    if (ch) {
+      var on = state.ima && state.ima.configured;
+      ch.className = 'badge ' + (on ? 'green' : 'gray');
+      ch.textContent = on ? '知识通道：iMa 已连接' : '知识通道：本机知识库';
+    }
+    prepareStackedTables($('knowledge-table'));
+  }
+
+  function searchKnowledge() {
+    var q = ($('kb-query').value || '').trim();
+    if (!q && state.detail) q = state.detail.name;
+    if (!q) { toast('先输入关键词'); return; }
+    loadKnowledge(q).then(function () { toast('已按「' + q + '」检索'); });
+  }
+
+  // 把知识库文档真实引用到当前需求：写入需求材料并沉淀，非前端假动作。
+  function useKnowledge(docId) {
+    if (!state.detail) { toast('先到需求列表打开一条需求，再引用知识'); showView('requirements'); return; }
+    var all = (state.kbDocs || []).concat(state.kbHits || []);
+    var doc = null;
+    for (var i = 0; i < all.length; i += 1) { if (all[i].id === docId) { doc = all[i]; break; } }
+    if (!doc) { toast('没有找到这份知识文档'); return; }
+    var id = state.detail.id;
+    var text = '【引用历史知识】' + doc.title + '\n' +
+      (doc.summary ? '摘要：' + doc.summary + '\n' : '') +
+      String(doc.body || '').slice(0, 800);
+    toast('正在引用「' + doc.title + '」…');
+    api('/api/requirements/' + id + '/materials', 'POST', { text: text })
+      .then(function () { return refreshRequirements(); })
+      .then(function () { return loadKnowledge(''); })
+      .then(function () { return openRequirement(id); })
+      .then(function () {
+        showView('requirement');
+        toast('已把「' + doc.title + '」引用到当前需求，并沉淀到知识库');
+      })
+      .catch(function (err) { toast('引用失败：' + err.message); });
+  }
+
+  /* ---------- 执行六阶段 ---------- */
+
+  function setRunButton(running) {
+    var btn = $('run-all-btn');
+    if (!btn) return;
+    btn.disabled = running;
+    btn.textContent = running ? '执行中…' : '跑完全流程';
+  }
+
+  // 执行期间轮询：智能体是流式输出的，页面跟着刷，等待过程看得见。
+  var streamTimer = null;
+  var clockTimer = null;
+
+  // 等待过程要有"在跑"的体感：每阶段单独计时，重绘后也能接着数。
+  function startRunClock() {
+    stopRunClock();
+    var tick = function () {
+      var el = $('run-clock');
+      if (!el) return;
+      var base = state.stageStartedAt || Date.now();
+      el.textContent = '已执行 ' + Math.max(0, Math.round((Date.now() - base) / 1000)) + ' 秒';
+    };
+    tick();
+    clockTimer = setInterval(tick, 1000);
+  }
+
+  function stopRunClock() {
+    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+  }
+
+  function startStreamPolling(id) {
+    stopStreamPolling();
+    streamTimer = setInterval(function () {
+      api('/api/requirements/' + id).then(function (r) {
+        if (!state.detail || state.detail.id !== id) return;
+        state.detail = r.requirement;
+        var idx = state.busyKey ? STAGE_KEYS.indexOf(state.busyKey) : -1;
+        if (idx >= 0) renderStage(idx);
+        renderRunStrip();
+        renderDetailStatus();
+      }).catch(function () { /* 轮询失败不打断执行 */ });
+    }, 1500);
+    startRunClock();
+  }
+
+  function stopStreamPolling() {
+    if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+    stopRunClock();
+  }
+
+  function renderRunStrip() {
+    var node = $('run-strip');
+    if (!node) return;
+    var list = (state.detail && state.detail.stages.length)
+      ? state.detail.stages
+      : STAGE_META.map(function (m) { return { key: m.key, name: m.name, status: '未开始' }; });
+    node.innerHTML = list.map(function (s) {
+      var cls = state.busyKey === s.key ? 'busy' : s.status === '已完成' ? 'done' : '';
+      var text = state.busyKey === s.key ? '执行中' : s.status;
+      return '<span class="run-chip ' + cls + '"><i></i>' + esc(s.name) + ' · ' + esc(text) + '</span>';
+    }).join('');
+  }
+
+  function runStageByKey(key) {
+    if (state.running) { toast('正在执行，请稍候'); return; }
+    if (!state.detail) { toast('先选择一条需求'); return; }
+    state.running = true;
+    state.busyKey = key;
+    state.stageIndex = Math.max(0, STAGE_KEYS.indexOf(key));
+    state.stageStartedAt = Date.now();
+    setRunButton(true);
+    renderStepper();
+    renderStage(state.stageIndex);
+    renderRunStrip();
+    renderDetailStatus();
+    var id = state.detail.id;
+    startStreamPolling(id);
+    api('/api/requirements/' + id + '/stages/' + key + '/run', 'POST')
+      .then(function () { return refreshRequirements(); })
+      .then(function () { return openRequirement(id); })
+      .then(function () { toast('本阶段已产出，交付物已回填'); })
+      .catch(function (err) { toast('执行失败：' + err.message); })
+      .then(function () {
+        stopStreamPolling();
+        state.running = false;
+        state.busyKey = null;
+        setRunButton(false);
+        if (state.detail) { renderStepper(); renderStage(state.stageIndex); }
+        renderRunStrip();
+        renderDetailStatus();
+        renderDashboard();
+      });
+  }
+
+  function runAllStages() {
+    if (state.running) { toast('正在执行，请稍候'); return; }
+    if (!state.detail) { toast('先选择一条需求'); return; }
+    var id = state.detail.id;
+    state.running = true;
+    setRunButton(true);
+    startStreamPolling(id);
+    var chain = Promise.resolve();
+    STAGE_KEYS.forEach(function (key, i) {
+      chain = chain.then(function () {
+        state.busyKey = key;
+        state.stageIndex = i;
+        state.stageStartedAt = Date.now();
+        renderStepper();
+        renderStage(i);
+        renderRunStrip();
+        renderDetailStatus();
+        return api('/api/requirements/' + id + '/stages/' + key + '/run', 'POST');
+      }).then(function () {
+        return openRequirement(id);
+      }).then(function () {
+        renderDashboard();
+      });
+    });
+    chain.then(function () {
+      toast('六个阶段已跑完，交付物与风险已全部回填');
+    }).catch(function (err) {
+      toast('执行中断：' + err.message);
+    }).then(function () {
+      stopStreamPolling();
+      state.running = false;
+      state.busyKey = null;
+      setRunButton(false);
+      if (state.detail) { renderStepper(); renderStage(state.stageIndex); }
+      renderRunStrip();
+      renderDetailStatus();
+    });
+  }
+
+  /* ---------- 材料入口 ---------- */
+
+  var SAMPLE = [
+    '一键成片 BGM 选择本期扩为推荐、导入、AI 音乐三个模块。',
+    'AI 音乐原设计含「想法成曲」和「素材成曲」两种模式，评审确认一期只上想法成曲。',
+    '素材成曲因外部音乐厂商只开放文本提示词接口、不提供素材分析能力，本期不进版本，先做一次本地可行性验证。',
+    '验证方式：用户上传一张图片、输入一句提示词，本地解析画面并生成一段 15 秒背景音乐，支持试听与下载。',
+    '本期只做独立单页验证工具，不接外部厂商、不落个人云、不进入一键成片正式链路。',
+    '验收边界：输出的是「画面信息能否稳定影响音乐方案与听感」的结论，作为是否立项的输入，不作为线上功能交付。',
+    '待确认：30 秒时长是否需要、是否同时导出 WAV、对比样本口径、验证通过后走厂商还是保留本地合成。'
+  ].join('\n');
+
+  function fillSample() {
+    $('intake-name').value = '一键成片 · AI音乐（素材成曲）';
+    $('intake-client').value = '内容平台 · 一键成片';
+    $('intake-material').value = SAMPLE;
+  }
+
+  /* ---------- 文件上传 ---------- */
+
+  var TEXT_EXT = ['txt', 'md', 'markdown', 'json', 'csv', 'tsv', 'log', 'srt', 'vtt', 'xml', 'html', 'yml', 'yaml'];
+  var attachments = { intake: [], material: [] };
+
+  function isTextFile(f) {
+    var ext = String(f.name || '').toLowerCase().split('.').pop();
+    return (f.type && f.type.indexOf('text/') === 0) || TEXT_EXT.indexOf(ext) >= 0;
+  }
+
+  function renderAttachments(target) {
+    var box = $(target === 'material' ? 'material-files' : 'intake-files');
+    if (!box) return;
+    var list = attachments[target] || [];
+    if (!list.length) { box.innerHTML = ''; box.classList.remove('show'); return; }
+    box.classList.add('show');
+    box.innerHTML = list.map(function (f, i) {
+      return '<span class="upload-chip"><span>' + (f.parsing ? '解析中 · ' : '附件 · ') + esc(f.name) + '</span>' +
+        '<b title="移除" onclick="removeAttachment(\'' + target + '\', ' + i + ')">\u00d7</b></span>';
+    }).join('');
+  }
+
+  function removeAttachment(target, idx) {
+    attachments[target].splice(idx, 1);
+    renderAttachments(target);
+  }
+
+  function markParsed(file, target) {
+    (attachments[target] || []).forEach(function (f) {
+      if (f.name === file.name) f.parsing = false;
+    });
+    renderAttachments(target);
+  }
+
+  // 原型 PDF、需求 docx 这类材料先解析出正文再进材料池，避免智能体只看到一个文件名。
+  function extractAttachment(file, target, ta) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var raw = String(reader.result || '');
+      var data = raw.indexOf(',') >= 0 ? raw.slice(raw.indexOf(',') + 1) : '';
+      if (!data) { markParsed(file, target); return; }
+      api('/api/extract', 'POST', { name: file.name, data: data }).then(function (r) {
+        markParsed(file, target);
+        if (r && r.ok && r.text) {
+          ta.value = (ta.value || '').replace(/\s+$/, '') + '\n【文件：' + file.name + '】\n' + r.text + '\n';
+          toast('已解析 ' + file.name);
+        } else {
+          toast((r && r.reason) || ('未能解析 ' + file.name));
+        }
+      }).catch(function (err) {
+        markParsed(file, target);
+        toast('解析失败：' + err.message);
+      });
+    };
+    reader.onerror = function () { markParsed(file, target); toast('读取失败：' + file.name); };
+    reader.readAsDataURL(file);
+  }
+
+  function handleFiles(ev, target) {
+    var files = Array.prototype.slice.call((ev.target && ev.target.files) || []);
+    if (ev.target) ev.target.value = '';
+    if (!files.length) return;
+    var ta = $(target === 'material' ? 'material-text' : 'intake-material');
+    var textFiles = [];
+    var otherFiles = [];
+    files.forEach(function (f) { (isTextFile(f) ? textFiles : otherFiles).push(f); });
+
+    otherFiles.forEach(function (f) { attachments[target].push({ name: f.name, size: f.size, parsing: true }); });
+    renderAttachments(target);
+    otherFiles.forEach(function (f) { extractAttachment(f, target, ta); });
+
+    if (target === 'intake' && !($('intake-name').value || '').trim()) {
+      $('intake-name').value = files[0].name.replace(/\.[^.]+$/, '');
+    }
+
+    var remaining = textFiles.length;
+    if (!remaining) {
+      if (otherFiles.length) toast('正在解析 ' + otherFiles.length + ' 个文件…');
+      return;
+    }
+    textFiles.forEach(function (f) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        ta.value = (ta.value || '').replace(/\s+$/, '') + '\n【文件：' + f.name + '】\n' + String(reader.result || '') + '\n';
+        remaining -= 1;
+        if (remaining === 0) toast('已读取 ' + textFiles.length + ' 个文件的正文');
+      };
+      reader.onerror = function () { remaining -= 1; toast('读取失败：' + f.name); };
+      reader.readAsText(f);
+    });
+  }
+
+  function mergeAttachments(target, text) {
+    var list = attachments[target] || [];
+    if (!list.length) return text;
+    var note = list.map(function (f) { return '【附件】' + f.name; }).join('\n');
+    return (text ? text.replace(/\s+$/, '') + '\n\n' : '') + note;
+  }
+
+  function submitIntake() {
+    if (state.running) { toast('正在执行，请稍候'); return; }
+    var name = ($('intake-name').value || '').trim();
+    var client = ($('intake-client').value || '').trim() || '内部';
+    var owner = $('intake-owner').value;
+    var material = ($('intake-material').value || '').trim();
+    var prototypeUrl = ($('prototype-url').value || '').trim();
+    var hasAttach = (attachments.intake || []).length > 0;
+    if (!material && !hasAttach && !prototypeUrl) { toast('先粘贴需求材料、上传文件或填写原型链接'); $('intake-material').focus(); return; }
+    if (prototypeUrl && !state.prototypeRead) {
+      var autoBtn = $('run-btn');
+      autoBtn.disabled = true;
+      autoBtn.textContent = '正在读取原型…';
+      readPrototype(true)
+        .then(function () {
+          autoBtn.disabled = false;
+          autoBtn.textContent = '交给智能体跑全流程';
+          submitIntake();
+        })
+        .catch(function () {
+          autoBtn.disabled = false;
+          autoBtn.textContent = '交给智能体跑全流程';
+        });
+      return;
+    }
+    material = mergeAttachments('intake', material);
+    if (!name) name = material.replace(/\s+/g, '').slice(0, 18) || '未命名需求';
+    var btn = $('run-btn');
+    btn.disabled = true;
+    btn.textContent = '正在创建…';
+    api('/api/requirements', 'POST', { name: name, client: client, owner: owner, material: material, prototypeRead: state.prototypeRead ? { id: state.prototypeRead.readId, analysisHref: state.prototypeRead.analysisHref, reviewStatus: state.prototypeRead.reviewStatus, pages: state.prototypeRead.pages } : null })
+      .then(function (r) { return refreshRequirements().then(function () { return r.requirement.id; }); })
+      .then(function (id) {
+        showView('requirement');
+        return openRequirement(id);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = '交给智能体跑全流程';
+        attachments.intake = [];
+        renderAttachments('intake');
+        state.prototypeRead = null;
+        runAllStages();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = '交给智能体跑全流程';
+        toast('创建失败：' + err.message);
+      });
+  }
+
+  function newRequirement() {
+    showView('dashboard');
+    var panel = $('intake-panel');
+    if (panel) {
+      panel.classList.remove('demo-highlight');
+      void panel.offsetWidth;
+      panel.classList.add('demo-highlight');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setTimeout(function () { $('intake-name').focus(); }, 320);
+  }
+
+  /* ---------- 补充材料 ---------- */
+
+  function openMaterialModal() {
+    if (!state.detail) { toast('先选择一条需求'); return; }
+    $('material-modal').classList.add('open');
+    $('impact-box').classList.remove('show');
+    $('material-text').value = '';
+    attachments.material = [];
+    renderAttachments('material');
+  }
+
+  function closeMaterialModal() {
+    $('material-modal').classList.remove('open');
+    attachments.material = [];
+    renderAttachments('material');
+  }
+
+  function analyzeImpact() {
+    var text = ($('material-text').value || '').trim();
+    if (!text && !(attachments.material || []).length) { toast('先写下补充材料，或上传一个文件'); return; }
+    var algo = /(识别|抽取|摘要|模型|算法|准确率|标注|相似度|转写)/.test(text);
+    var tech = /(接口|服务|存储|队列|权限|上传|导出|部署|系统)/.test(text);
+    var affected = ['需求接收', '需求拆解'];
+    if (algo) affected.push('算法实验');
+    if (tech) affected.push('技术方案');
+    affected.push('开发联调');
+    var box = $('impact-box');
+    box.innerHTML =
+      '<strong>影响分析</strong><div style="margin-top:6px">影响阶段：' + affected.join('、') + '</div>' +
+      '<div>处理方式：补充材料会并入这条需求，并同步沉淀到知识库；相关阶段可以重新执行，结论会覆盖到最新版本。</div>' +
+      (algo ? '<div>风险提示：涉及算法口径，建议重跑评估后再确认验收标准。</div>' : '');
+    box.classList.add('show');
+  }
+
+  function addMaterial() {
+    if (!state.detail) return;
+    var text = ($('material-text').value || '').trim();
+    if (!text && !(attachments.material || []).length) { toast('先写下补充材料，或上传一个文件'); return; }
+    text = mergeAttachments('material', text);
+    var id = state.detail.id;
+    var pushNote = '';
+    api('/api/requirements/' + id + '/materials', 'POST', { text: text })
+      .then(function (r) {
+        pushNote = r && r.push && r.push.ok ? '，并已同步到 iMa 知识库' : '，并沉淀到知识库';
+        return refreshRequirements();
+      })
+      .then(function () { return openRequirement(id); })
+      .then(function () {
+        closeMaterialModal();
+        renderDashboard();
+        toast('补充材料已并入需求' + pushNote);
+      })
+      .catch(function (err) { toast('写入失败：' + err.message); });
+  }
+
+  /* ---------- 可运行原型 ---------- */
+
+  function openPrototype() {
+    if (!state.detail) { toast('先选择一条需求'); return; }
+    var build = state.detail.stages.filter(function (s) { return s.key === 'build'; })[0];
+    var rel = build && (build.demoEntry || build.prototypeHref);
+    if (!rel && !(build && build.prototype)) { toast('先在「开发联调」阶段生成原型'); return; }
+    var url = ORIGIN + (rel || ('/runs/' + state.detail.id + '/build/prototype.html'));
+    $('output-title').textContent = '可运行原型 · ' + state.detail.name;
+    $('output-open').href = url;
+    $('output-frame').src = url;
+    $('output-modal').classList.add('open');
+  }
+
+  function openOutputModal() { openPrototype(); }
+
+  // 在系统访达里打开该需求真实生成的 Demo 工程目录。
+  function openRunFolder(href) {
+    var rel = String(href || '').replace(/^\/runs\//, '').replace(/\/+$/, '');
+    if (!rel) { toast('没有可打开的项目目录'); return; }
+    toast('正在打开工程目录…');
+    api('/api/open', 'POST', { path: rel })
+      .then(function (r) {
+        if (r && r.ok) toast('已在访达打开 Demo 工程目录');
+        else toast((r && r.reason) || '打开失败');
+      })
+      .catch(function (err) { toast('打开失败：' + err.message); });
+  }
+
+  function closeOutputModal() {
+    $('output-modal').classList.remove('open');
+    $('output-frame').src = 'about:blank';
+  }
+
+  /* ---------- 导出 ---------- */
+
+  function exportCSV() {
+    if (!state.requirements.length) { toast('还没有需求可以导出'); return; }
+    var head = ['需求', '客户', '当前阶段', '已完成阶段数', '风险', '负责人', '最近更新'];
+    var lines = [head.join(',')];
+    state.requirements.map(toView).forEach(function (v) {
+      lines.push([v.name, v.client, v.stage, v.progress + '/6', v.risk, v.owner, v.updated].map(function (c) {
+        return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"';
+      }).join(','));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '需求清单-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast('需求清单已导出为 CSV');
+  }
+
+  /* ---------- 演示引导 ---------- */
+
+  var DEMO_STEPS = [
+    { view: 'dashboard', target: 'hero', title: '先说结论', desc: '客户材料进来，六个阶段依次跑完，每一步的交付物、责任角色和风险都留在同一条记录里。' },
+    { view: 'dashboard', target: 'intake-panel', title: '材料入口', desc: '把会议转写、需求说明或录音摘要粘贴进来，点一下就开始跑全流程，不需要手工拆阶段。' },
+    { view: 'dashboard', target: 'full-process', title: '全套流程', desc: '需求接收、需求拆解、算法实验、技术方案、开发联调、验收交付，六个阶段依次衔接，前一步的结论会带到下一步。' },
+    { view: 'requirements', target: 'req-table-panel', title: '多需求并行', desc: '不是只跑一条需求。这里同时管理多条需求，按阶段和风险筛选，谁负责、卡在哪一步都能直接看到。' },
+    { view: 'requirement', target: 'stepper', title: '打开一条需求', desc: '点开其中一条，看到它完整的推进记录：走到哪一步、每一步交付了什么、哪些地方需要人工确认。' },
+    { view: 'requirement', stage: 0, target: 'stage-content', title: '需求接收', desc: '客户只给了原型描述、会议转写和需求说明。系统先整理材料清单，把缺口和待确认问题一次列全。' },
+    { view: 'requirement', stage: 1, target: 'stage-content', title: '需求拆解', desc: '结合历史需求知识库，输出需求拆解文档，并标出可以直接复用的历史经验，避免重复踩坑。' },
+    { view: 'requirement', stage: 4, target: 'stage-content', title: '开发联调', desc: '到这一步不只是文档，系统会直接生成一份可以打开使用的原型页面，用真实产物验证主链路。' },
+    { view: 'delivery', target: 'delivery-table', title: '交付档案', desc: '每个阶段的交付物都留档，一条需求对应一条记录，谁交付、交付了什么、什么时候交付都可追溯。' },
+    { view: 'knowledge', target: 'knowledge-table', title: '知识沉淀', desc: '需求做完不是结束。拆解经验、实验方案和复盘问题会回流知识库，下一条同类需求直接复用。' }
+  ];
+
+  var demoIndex = 0;
+
+  function startDemo() {
+    demoIndex = 0;
+    $('demo-guide').classList.add('open');
+    renderDemoStep();
+  }
+
+  function renderDemoStep() {
+    var step = DEMO_STEPS[demoIndex];
+    $('guide-step').textContent = '第 ' + (demoIndex + 1) + ' / ' + DEMO_STEPS.length + ' 步';
+    $('guide-title').textContent = step.title;
+    $('guide-desc').textContent = step.desc;
+    $('guide-next').textContent = demoIndex === DEMO_STEPS.length - 1 ? '完成' : '下一步';
+    if (step.view) showView(step.view);
+    if (typeof step.stage === 'number' && state.detail) {
+      state.stageIndex = step.stage;
+      renderStepper();
+      renderStage(step.stage);
+    }
+    if (step.target) {
+      var target = $(step.target);
+      if (target) {
+        target.classList.remove('demo-highlight');
+        void target.offsetWidth;
+        target.classList.add('demo-highlight');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+
+  function nextDemoStep() {
+    if (demoIndex < DEMO_STEPS.length - 1) {
+      demoIndex += 1;
+      renderDemoStep();
+    } else {
+      endDemo();
+      toast('演示结束，流程记录与交付物已完整保留');
+    }
+  }
+
+  function prevDemoStep() {
+    if (demoIndex > 0) {
+      demoIndex -= 1;
+      renderDemoStep();
+    }
+  }
+
+  function endDemo() {
+    $('demo-guide').classList.remove('open');
+  }
+
+  /* ---------- 表格移动端标签 ---------- */
+
+  function prepareStackedTables(scope) {
+    var map = {
+      'req-table': ['需求', '客户', '当前阶段', '风险', '负责人', '更新时间'],
+      'delivery-table-grid': ['阶段', '交付物', '状态', '负责角色', '更新时间'],
+      'knowledge-table': ['历史需求', '相似度', '可复用内容', '更新时间']
+    };
+    Object.keys(map).forEach(function (id) {
+      var table = $(id);
+      if (!table) return;
+      if (scope && table !== scope && !scope.contains(table)) return;
+      var labels = map[id];
+      table.querySelectorAll('tbody tr').forEach(function (row) {
+        row.querySelectorAll('td').forEach(function (cell, index) {
+          cell.dataset.label = labels[index] || '';
+        });
+      });
+    });
+  }
+
+  /* ---------- 引擎状态 ---------- */
+
+  function renderEngine() {
+    var e = state.engine || {};
+    var badge = $('engine-badge');
+    if (e.authed) {
+      badge.className = 'badge green';
+      badge.textContent = '智能体已接入';
+    } else {
+      badge.className = 'badge amber';
+      badge.textContent = '流程引擎就绪';
+    }
+  }
+
+  /* ---------- 启动 ---------- */
+
+  function bootstrap() {
+    renderDashboard();
+    api('/api/health').then(function (h) {
+      state.engine = h.engine;
+      state.ima = h.knowledge;
+      renderEngine();
+    }).catch(function () {
+      $('engine-badge').className = 'badge red';
+      $('engine-badge').textContent = '桥接未连接';
+      return;
+    }).then(function () {
+      return refreshRequirements().catch(function () {});
+    }).then(function () {
+      return loadKnowledge('');
+    }).then(function () {
+      renderDashboard();
+      renderRequirements();
+      if (state.requirements.length) {
+        return openRequirement(state.requirements[0].id);
+      }
+      renderRequirementView();
+    }).catch(function () {});
+  }
+
+  document.querySelectorAll('.nav button, .mobile-nav button').forEach(function (button) {
+    button.addEventListener('click', function () { showView(button.dataset.view); });
+  });
+
+  document.querySelectorAll('.modal').forEach(function (modal) {
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) {
+        modal.classList.remove('open');
+        if (modal.id === 'output-modal') $('output-frame').src = 'about:blank';
+      }
+    });
+  });
+
+  var search = $('global-search');
+  if (search) {
+    search.addEventListener('input', function () {
+      state.searchText = search.value.trim();
+      if (state.searchText) showView('requirements');
+      renderRequirements();
+    });
+  }
+
+  bootstrap();
+  </script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 # 需求协作台 Demo
 
 一个本地运行的需求全流程管理演示，覆盖需求接收、需求拆解、算法实验、技术方案、开发联调和验收交付。页面通过本机 WorkBuddy 桌面端调用智能体，可选接入飞书文档与 iMa 知识库。
-<img width="2906" height="1668" alt="image" src="https://github.com/user-attachments/assets/206efbc6-4e53-487e-a395-4ab99ea412b5" />
 
+![需求协作台界面](docs/requirement-cockpit-demo.png)
 
 ## 运行
 

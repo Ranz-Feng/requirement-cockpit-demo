@@ -32,7 +32,7 @@ http://127.0.0.1:8788/index.html
 cp bridge/.env.example bridge/.env
 ```
 
-在 `bridge/.env` 中配置飞书应用或用户授权。iMa 默认读取本机 `~/.config/ima` 中的客户端配置。
+在 `bridge/.env` 中配置飞书应用或用户授权。iMa 默认读取本机 `~/.config/ima` 中的配置。
 
 生成 MP3 需要本机可用的 `ffmpeg`。
 

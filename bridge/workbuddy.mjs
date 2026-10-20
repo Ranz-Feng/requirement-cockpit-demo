@@ -1,4 +1,4 @@
-// WorkBuddy 本地网关客户端。
+// WorkBuddy 本地网关。
 //
 // WorkBuddy 桌面端在启动时会以一个常驻 sidecar 进程（codebuddy --serve）暴露本地 HTTP 网关，
 // 该进程由桌面端注入登录凭据，因此它才是"已登录、可真实调用模型与智能体"的入口。

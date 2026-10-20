@@ -101,7 +101,7 @@ async function readPrototype(body) {
   const binding = {
     ...breakdownBinding,
     maxTurns: 16,
-    persona: `${breakdownBinding.persona}\n你负责调用 codesign-export 的产物，将客户原型转化为可追溯的算法需求拆解输入，必须逐页读取截图并给出证据化分析。`,
+    persona: `${breakdownBinding.persona}\n你负责调用 codesign-export 的产物，将业务原型转化为可追溯的算法需求拆解输入，必须逐页读取截图并给出证据化分析。`,
     systemPrompt: `${breakdownBinding.systemPrompt}\n只基于实际读取到的原型内容输出简体中文，不臆测未展示的功能。`,
   };
   const agent = await callCodeBuddy(prompt, binding, 900_000);
@@ -704,8 +704,8 @@ function readBody(req) {
   });
 }
 
-// ---------- 客户材料解析 ----------
-// 客户给过来的材料不止文本：原型是 PDF、需求说明可能是 docx、评审会是录音。
+// ---------- 需求材料解析 ----------
+// 业务方提交的材料不止文本：原型是 PDF、需求说明可能是 docx、评审会是录音。
 // 上传后先解析成正文再进材料池，避免智能体只看到一个文件名。
 
 function firstBin(paths) {
@@ -922,7 +922,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { doc, push: pushed });
     }
 
-    // 上传的客户材料（原型 PDF / 需求 docx / 录音等）先解析成正文再进材料池。
+    // 上传的需求材料（原型 PDF / 需求 docx / 录音等）先解析成正文再进材料池。
     if (p === '/api/extract' && req.method === 'POST') {
       const body = await readBody(req);
       const name = String(body.name || '材料');

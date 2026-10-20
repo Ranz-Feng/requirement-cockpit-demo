@@ -816,7 +816,7 @@
 
       <header class="topbar">
         <div class="crumb" id="crumb"><strong>需求协作台</strong> / 概览</div>
-        <input class="search" id="global-search" placeholder="按需求名称或客户筛选…">
+        <input class="search" id="global-search" placeholder="按需求名称或业务方筛选…">
         <div class="top-right">
           <span class="mode-badge" id="engine-badge">通道检测中…</span>
           <div class="avatar">产</div>
@@ -838,14 +838,14 @@
 
           <div class="panel" id="intake-panel" style="margin-bottom:16px">
             <div class="panel-head">
-              <h2>把客户材料交进来</h2>
+              <h2>把需求材料交进来</h2>
             </div>
             <div class="panel-body">
               <div class="intake-grid">
                 <label>需求名称
                   <input id="intake-name" placeholder="例如：一键成片 · AI音乐（素材成曲）">
                 </label>
-                <label>客户
+                <label>业务方
                   <input id="intake-client" placeholder="例如：内容平台 · 一键成片">
                 </label>
                 <label>负责人
@@ -998,7 +998,7 @@
             <div class="panel-body">
               <table class="table mobile-stack" id="req-table">
                 <thead>
-                  <tr><th>需求</th><th>客户</th><th>当前阶段</th><th>风险</th><th>负责人</th><th>更新时间</th></tr>
+                  <tr><th>需求</th><th>业务方</th><th>当前阶段</th><th>风险</th><th>负责人</th><th>更新时间</th></tr>
                 </thead>
                 <tbody id="req-table-body"></tbody>
               </table>
@@ -1103,7 +1103,7 @@
                     <span class="dot amber"></span>
                     <div>
                       <strong>项目组</strong>
-                      <span>排期、客户沟通、验收交付与长期维护。</span>
+                      <span>排期、需求沟通、验收交付与长期维护。</span>
                     </div>
                   </div>
                   <div class="risk-item">
@@ -1155,14 +1155,14 @@
   <div class="modal" id="material-modal">
     <div class="modal-box">
       <div class="modal-head">
-        <h2>补充客户材料</h2>
+        <h2>补充需求材料</h2>
         <button class="btn ghost" onclick="closeMaterialModal()">关闭</button>
       </div>
       <div class="modal-body">
         <label class="upload-zone upload-btn">把新收到的原型说明、录音摘要或转写文本贴上进来，也可以直接选文件
           <input type="file" id="material-file" multiple hidden onchange="handleFiles(event, 'material')">
         </label>
-        <textarea id="material-text" placeholder="例如：客户追加要求，会议纪要需要支持中英文混合内容，并在待办中保留负责人和截止时间。"></textarea>
+        <textarea id="material-text" placeholder="例如：追加要求，会议纪要需要支持中英文混合内容，并在待办中保留负责人和截止时间。"></textarea>
         <div class="upload-list" id="material-files"></div>
         <div class="impact-box" id="impact-box"></div>
       </div>
@@ -1554,7 +1554,7 @@
         '<span class="feed-tag ' + feedTone(stage) + '">' + esc(stage) + '</span>' +
         '<div>知识库更新：<b>' + esc(title) + '</b></div></div>');
     });
-    $('feed-list').innerHTML = rows.join('') || '<div class="empty">暂无动态，先把一条客户材料交进来跑一遍。</div>';
+    $('feed-list').innerHTML = rows.join('') || '<div class="empty">暂无动态，先把一条需求材料交进来跑一遍。</div>';
   }
 
   var FEED_STAGES = ['需求接收', '需求拆解', '算法实验', '技术方案', '开发联调', '验收交付'];
@@ -1639,7 +1639,7 @@
       '<span class="badge ' + (done >= 6 ? 'green' : 'brand') + '">' + esc(currentName) + '</span>' +
       '<span class="badge ' + (done >= 6 ? 'green' : 'gray') + '">' + done + ' / 6 阶段已完成</span>' +
       (risky.length ? '<span class="badge amber">' + risky.length + ' 项需关注</span>' : '<span class="badge green">暂无待关注风险</span>') +
-      '<span>客户：' + esc(d.client || '内部') + '</span>' +
+      '<span>业务方：' + esc(d.client || '内部') + '</span>' +
       '<span>负责人：' + esc(d.owner || '产品 A') + '</span>' +
       '<span>iMa 归档：' + esc(d.imaFolderName || '待生成') + (d.imaFolderStatus === '已找到' ? '（已关联）' : '（需先在项目文档中创建）') + '</span>' +
       '<span>最近更新：' + esc(d.updated || '—') + '</span>';
@@ -2281,7 +2281,7 @@
 
   function exportCSV() {
     if (!state.requirements.length) { toast('还没有需求可以导出'); return; }
-    var head = ['需求', '客户', '当前阶段', '已完成阶段数', '风险', '负责人', '最近更新'];
+    var head = ['需求', '业务方', '当前阶段', '已完成阶段数', '风险', '负责人', '最近更新'];
     var lines = [head.join(',')];
     state.requirements.map(toView).forEach(function (v) {
       lines.push([v.name, v.client, v.stage, v.progress + '/6', v.risk, v.owner, v.updated].map(function (c) {
@@ -2301,12 +2301,12 @@
   /* ---------- 演示引导 ---------- */
 
   var DEMO_STEPS = [
-    { view: 'dashboard', target: 'hero', title: '先说结论', desc: '客户材料进来，六个阶段依次跑完，每一步的交付物、责任角色和风险都留在同一条记录里。' },
+    { view: 'dashboard', target: 'hero', title: '先说结论', desc: '需求材料进来，六个阶段依次跑完，每一步的交付物、责任角色和风险都留在同一条记录里。' },
     { view: 'dashboard', target: 'intake-panel', title: '材料入口', desc: '把会议转写、需求说明或录音摘要粘贴进来，点一下就开始跑全流程，不需要手工拆阶段。' },
     { view: 'dashboard', target: 'full-process', title: '全套流程', desc: '需求接收、需求拆解、算法实验、技术方案、开发联调、验收交付，六个阶段依次衔接，前一步的结论会带到下一步。' },
     { view: 'requirements', target: 'req-table-panel', title: '多需求并行', desc: '不是只跑一条需求。这里同时管理多条需求，按阶段和风险筛选，谁负责、卡在哪一步都能直接看到。' },
     { view: 'requirement', target: 'stepper', title: '打开一条需求', desc: '点开其中一条，看到它完整的推进记录：走到哪一步、每一步交付了什么、哪些地方需要人工确认。' },
-    { view: 'requirement', stage: 0, target: 'stage-content', title: '需求接收', desc: '客户只给了原型描述、会议转写和需求说明。系统先整理材料清单，把缺口和待确认问题一次列全。' },
+    { view: 'requirement', stage: 0, target: 'stage-content', title: '需求接收', desc: '目前只有原型描述、会议转写和需求说明。系统先整理材料清单，把缺口和待确认问题一次列全。' },
     { view: 'requirement', stage: 1, target: 'stage-content', title: '需求拆解', desc: '结合历史需求知识库，输出需求拆解文档，并标出可以直接复用的历史经验，避免重复踩坑。' },
     { view: 'requirement', stage: 4, target: 'stage-content', title: '开发联调', desc: '到这一步不只是文档，系统会直接生成一份可以打开使用的原型页面，用真实产物验证主链路。' },
     { view: 'delivery', target: 'delivery-table', title: '交付档案', desc: '每个阶段的交付物都留档，一条需求对应一条记录，谁交付、交付了什么、什么时候交付都可追溯。' },
@@ -2369,7 +2369,7 @@
 
   function prepareStackedTables(scope) {
     var map = {
-      'req-table': ['需求', '客户', '当前阶段', '风险', '负责人', '更新时间'],
+      'req-table': ['需求', '业务方', '当前阶段', '风险', '负责人', '更新时间'],
       'delivery-table-grid': ['阶段', '交付物', '状态', '负责角色', '更新时间'],
       'knowledge-table': ['历史需求', '相似度', '可复用内容', '更新时间']
     };

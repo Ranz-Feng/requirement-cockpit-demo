@@ -31,7 +31,7 @@ export const STAGES = [
     agent: '客研管理',
     agentId: 'customer_research',
     skills: ['customer-research', 'requirement-entry'],
-    deliverable: '客户材料清单、缺口清单、待确认问题',
+    deliverable: '需求材料清单、缺口清单、待确认问题',
     brief: '材料清单 · 缺口清单',
     next: '进入需求拆解，匹配历史知识库。',
   },
@@ -340,7 +340,7 @@ export function localStage(req, stageKey, material) {
       blindSpot: '纪要是否需要区分发言人与时间戳。',
       summary: `解析 ${a.lines.length} 条要点，识别出 ${a.inventory.length} 类输入材料。`,
       html:
-        `<div class="doc-block"><h3>客户材料梳理</h3><p>${esc(a.title)}</p>` +
+        `<div class="doc-block"><h3>需求材料梳理</h3><p>${esc(a.title)}</p>` +
         `<div>${tags(a.inventory, 'brand')}${a.gaps.length ? `<span class="tag amber">缺口 ${a.gaps.length} 项</span>` : ''}</div></div>` +
         `<div class="doc-block"><h3>需求判断</h3><ul>${ul(
           [
@@ -479,7 +479,7 @@ export function localStage(req, stageKey, material) {
     ...base,
     status: '已完成',
     riskLevel: 'low',
-    risk: '客户尚未确认验收时间与验收人。',
+    risk: '验收时间与验收人尚未确认。',
     blindSpot: '使用说明和上线清单容易在最后一步遗漏。',
     summary: '输出验收清单与交付物索引。',
     html:
@@ -592,7 +592,7 @@ export function buildStagePrompt(req, stage, material, hits) {
   return [
     `你是需求协作台里的「${stage.name}」阶段执行智能体，使用的技能包：${stage.skills.join('、')}。`,
     `需求名称：${req.name}`,
-    `客户：${req.client || '内部'}`,
+    `业务方：${req.client || '内部'}`,
     `阶段交付物要求：${stage.deliverable}`,
     hits && hits.length
       ? `可复用的历史知识：${hits.map((h) => h.title).join('、')}`
@@ -647,7 +647,7 @@ export function buildBatchPrompt(req, stage, material, batch, context) {
   return [
     `你是需求协作台里「${stage.name}」阶段的全栈开发智能体 ${stage.agent}。本批只产出这些文件：${batch.files.join('、')}。`,
     `需求名称：${req.name}`,
-    `客户：${req.client || '内部'}`,
+    `业务方：${req.client || '内部'}`,
     '',
     '需求材料与技术方案（开发依据）：',
     String(material || req.material || '').slice(0, 8000),
@@ -728,13 +728,13 @@ const PROTOTYPE_PROFILES = {
     sections: [
       { title: '内容概览', kind: 'summary', take: 2, empty: '未识别到内容' },
       { title: '抽取结果', kind: 'table', columns: ['条目', '归类'], cell2: '待归类', match: '(条款|约定|责任|义务|金额|期限|类型|类别|工单)', empty: '未识别到可抽取条目' },
-      { title: '关键信息', kind: 'list', match: '(甲方|乙方|金额|时间|日期|期限|编号|版本|客户)', empty: '未识别到关键信息' },
+      { title: '关键信息', kind: 'list', match: '(甲方|乙方|金额|时间|日期|期限|编号|版本|业务方)', empty: '未识别到关键信息' },
       { title: '待确认问题', kind: 'list', match: '([?？]|是否|待确认|不明确)', empty: '无' },
     ],
   },
   summary: {
     sub: '由「开发联调」阶段生成 · 粘贴原文即可得到摘要与要点',
-    placeholder: '把需求说明、文档正文或客户原文粘贴到这里，然后点生成',
+    placeholder: '把需求说明、文档正文或业务原文粘贴到这里，然后点生成',
     sections: [
       { title: '内容摘要', kind: 'summary', take: 3, empty: '未识别到摘要' },
       { title: '关键要点', kind: 'list', match: '(.{6,})', empty: '未识别到要点' },
@@ -866,7 +866,7 @@ export function stageArtifactMarkdown(req, stage, result) {
     '',
     '## 基本信息',
     `- 需求名称：${req.name}`,
-    `- 客户：${req.client || '内部'}`,
+    `- 业务方：${req.client || '内部'}`,
     `- 负责人：${req.owner || '产品 A'}`,
     `- 执行智能体：${stage.agent}`,
     `- 技能包：${stage.skills.join('、')}`,
@@ -940,7 +940,7 @@ td{padding:6px 0;border-top:1px solid #f0e8df;vertical-align:top}
   <div class="card" id="out"><span class="sub">结果会显示在这里。</span></div>
 </div>
 <script>
-var SAMPLE = '客户希望把会议录音上传到云盘后自动生成纪要并提取待办。纪要包含会议摘要、关键决议、待办事项。待办需要负责人和截止时间，是否自动识别负责人待确认。验收标准：30 分钟内出初稿，字段完整率不低于 90%。';
+var SAMPLE = '业务方希望把会议录音上传到云盘后自动生成纪要并提取待办。纪要包含会议摘要、关键决议、待办事项。待办需要负责人和截止时间，是否自动识别负责人待确认。验收标准：30 分钟内出初稿，字段完整率不低于 90%。';
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function split(raw){return raw.split(/[。；;\\r\\n]/).map(function(s){return s.trim()}).filter(Boolean)}
 function pick(parts,re){return parts.filter(function(l){return re.test(l)})}

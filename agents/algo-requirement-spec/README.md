@@ -99,7 +99,7 @@ python3 install_agent.py
 
 脚本把本包复制到 `~/.workbuddy/plugins/marketplaces/my-experts/plugins/algo-requirement-spec/`，并写入该市场的 `marketplace.json` 清单。完成后重启 WorkBuddy，在【专家中心】→【我的专家】选择“算法需求拆解专家”。
 
-### 方式二：客户端创建
+### 方式二：应用端创建
 
 【专家·技能·连接器】→【专家】→【我的专家】→【创建专家】，把 `agents/algo-requirement-spec.md` 的角色与规则作为创建要求，并参照 `plugin.json` 补齐展示配置。
 
